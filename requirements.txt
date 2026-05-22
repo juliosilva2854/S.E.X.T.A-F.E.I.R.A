@@ -1,0 +1,9 @@
+edge-tts>=6.1.9
+pygame>=2.5.2
+pyaudio>=0.2.14
+SpeechRecognition>=3.10.0
+vosk>=0.3.45
+duckduckgo-search>=5.0.0
+google-genai>=0.3.0
+gspread>=6.0.0
+oauth2client>=4.1.3

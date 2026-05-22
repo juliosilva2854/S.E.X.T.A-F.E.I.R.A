@@ -1,0 +1,11 @@
+# Ambientes Virtuais
+venv/
+env/
+.venv/
+
+# Ficheiros de Segurança e Senhas (NUNCA SUBIR)
+config.py
+credenciais.json
+
+# Banco de Dados de Relatórios e Logs
+__pycache__/

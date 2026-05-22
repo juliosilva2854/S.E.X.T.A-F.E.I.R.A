@@ -1,0 +1,62 @@
+[
+    {
+        "role": "Sexta-feira",
+        "texto": "Senhor, peço desculpas, mas não entendi bem o que o senhor quis dizer com 'prender rotas'. O senhor gostaria de consultar as rotas que temos ou calcular alguma distância? [ESPERAR]"
+    },
+    {
+        "role": "Usuário",
+        "texto": "atualizar pla"
+    },
+    {
+        "role": "Sexta-feira",
+        "texto": "Senhor, eu não consigo atualizar planilhas ou dados no meu sistema. Minhas capacidades se limitam a consultar as informações de rotas e distâncias que já estão armazenadas.\n\nPosso ajudar com alguma consulta sobre as rotas disponíveis? [ESPERAR]"
+    },
+    {
+        "role": "Usuário",
+        "texto": "atualizar pla"
+    },
+    {
+        "role": "Sexta-feira",
+        "texto": "Senhor, eu não consigo atualizar planilhas. Minhas informações são fixas e se limitam às rotas e distâncias que já estão no meu sistema.\n\nHá algo que eu possa consultar para o senhor? [ESPERAR]"
+    },
+    {
+        "role": "Usuário",
+        "texto": "atualizar plan"
+    },
+    {
+        "role": "Sexta-feira",
+        "texto": "Senhor, eu não consigo atualizar planilhas. Minhas informações são fixas e se limitam às rotas e distâncias que já estão no meu sistema.\n\nPosso ajudar com alguma consulta sobre as rotas disponíveis? [ESPERAR]"
+    },
+    {
+        "role": "Usuário",
+        "texto": "usar pla"
+    },
+    {
+        "role": "Sexta-feira",
+        "texto": "Senhor, se o senhor se refere a planilhas, eu não consigo usá-las para fazer alterações ou criar novos dados. Minhas funcionalidades se concentram em consultar as informações de rotas e distâncias que já estão no meu sistema.\n\nO senhor gostaria de fazer alguma consulta sobre as rotas disponíveis? [ESPERAR]"
+    },
+    {
+        "role": "Usuário",
+        "texto": "preencher"
+    },
+    {
+        "role": "Sexta-feira",
+        "texto": "Senhor, para que eu possa entender melhor, o que o senhor gostaria de preencher? Minhas funções são de consulta de informações sobre rotas e distâncias, não consigo preencher ou criar novos dados. [ESPERAR]"
+    },
+    {
+        "role": "Usuário",
+        "texto": "aprender plan"
+    },
+    {
+        "role": "Sexta-feira",
+        "texto": "Senhor, eu não tenho a capacidade de aprender ou processar planilhas. Minhas funções são limitadas a consultar as informações de rotas e distâncias que já estão armazenadas no meu sistema.\n\nO senhor gostaria de fazer alguma consulta sobre as rotas disponíveis? [ESPERAR]"
+    },
+    {
+        "role": "Usuário",
+        "texto": "tirar relatório desta semana"
+    },
+    {
+        "role": "Sexta-feira",
+        "texto": "Senhor, eu não possuo dados para gerar relatórios semanais ou qualquer outra informação baseada em períodos de tempo. Minhas informações se restringem às distâncias das rotas entre as localidades armazenadas no meu sistema.\n\nPosso ajudar com alguma consulta sobre as rotas ou distâncias disponíveis? [ESPERAR]"
+    }
+]
