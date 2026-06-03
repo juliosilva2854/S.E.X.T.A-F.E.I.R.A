@@ -1,0 +1,33 @@
+{
+  "summary": "RETESTE do bug HIGH do iteration_3 (botao Limpar nao restaurava KPIs). Bug CORRIGIDO e VERIFICADO. Fluxo completo testado em /analytics: (1) carga inicial Total KM=1568, (2) aplicar filtro unidade='UPA SANTO AMARO' -> Total KM=443 (filtro funciona), (3) clicar Limpar -> Total KM volta a 1568 e dropdown volta a 'Todas' (''). Regressoes leves tambem passaram: Atualizar recarrega (1568), heatmap-geo renderiza 20 marcadores leaflet, e os 3 botoes export (csv/xlsx/pdf) disparam download para /api/analytics/export com os formatos corretos.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/test_reports/iteration_3.json",
+    "/app/test_reports/pytest/analytics_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Fix do bug: clearFilters() agora chama loadAll({start:'',end:'',unidade:''}) e loadAll/filterQS aceitam override explicito - elimina o stale-closure que existia com setTimeout. Solucao limpa e correta.",
+    "Analytics.jsx tem 509 linhas - ainda no limite aceitavel. Sugestao (nao bloqueante): extrair FilterPanel, KpiGrid, HeatmapMap em sub-componentes para reduzir complexidade.",
+    "useCallback em filterQS/loadAll mantem deps corretas; o override pattern evita race conditions de re-render."
+  ],
+  "updated_files": [],
+  "success_rate": {
+    "backend": "skipped (frontend-only re-test)",
+    "frontend": "100% (5/5 fluxos: aplicar, limpar restore, atualizar, heatmap markers, 3 exports)"
+  },
+  "test_credentials": "n/a - /analytics e publico",
+  "seed_data_creation": "Nenhum. Dados existentes: 1568 km total, 20 unidades, 53 visitas; UPA SANTO AMARO=443 km.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Pagina /analytics esta 100% funcional apos o fix do bug Limpar (iteration_3 -> iteration_4). Todos os data-testid documentados funcionam. Backend ja estava 16/16 verde no iteration_3. Proximos retestes podem focar em chat/LLM (Gemini) se este for configurado.",
+  "rca_of_the_issue": "Bug original (iteration_3): onClick={()=>{ clearFilters(); setTimeout(loadAll,50); }} - setTimeout capturava o loadAll antigo (closure sobre start/end/unidade do render anterior). Fix aplicado: loadAll e filterQS agora aceitam um parametro 'override' explicito; clearFilters() chama loadAll({start:'',end:'',unidade:''}) sincronamente, sem depender de re-render. Verificacao: original=1568 -> filtrado=443 -> Limpar -> 1568 (igual ao original). Dropdown tambem reseta para ''. Bug CORRIGIDO."
+}

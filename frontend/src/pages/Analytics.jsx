@@ -58,21 +58,22 @@ export default function Analytics() {
     setTimeout(() => map.invalidateSize(), 200);
   }, []);
 
-  const filterQS = useCallback((extra = {}) => {
+  const filterQS = useCallback((extra = {}, override = null) => {
+    const src = override || { start, end, unidade };
     const p = new URLSearchParams();
-    if (start) p.set("start", start);
-    if (end) p.set("end", end);
-    if (unidade) p.set("unidade", unidade);
+    if (src.start) p.set("start", src.start);
+    if (src.end) p.set("end", src.end);
+    if (src.unidade) p.set("unidade", src.unidade);
     Object.entries(extra).forEach(([k, v]) => p.set(k, v));
     return p.toString();
   }, [start, end, unidade]);
 
-  const loadAll = useCallback(async () => {
+  const loadAll = useCallback(async (override = null) => {
     setLoading(true);
-    const base = filterQS();
+    const base = filterQS({}, override);
     // KPIs/charts: cada um independente — falha de um não derruba a página
     const results = await Promise.allSettled([
-      api.get(`/analytics/kpis?${filterQS({ fuel_cost: fuelCost, km_per_liter: kmPerLiter })}`),
+      api.get(`/analytics/kpis?${filterQS({ fuel_cost: fuelCost, km_per_liter: kmPerLiter }, override)}`),
       api.get(`/analytics/weekly?${base}&weeks=12`),
       api.get(`/analytics/daily?days=30`),
       api.get(`/analytics/heatmap`),
@@ -138,7 +139,10 @@ export default function Analytics() {
     toast.success(`Exportando ${format.toUpperCase()}…`);
   };
 
-  const clearFilters = () => { setStart(""); setEnd(""); setUnidade(""); };
+  const clearFilters = () => {
+    setStart(""); setEnd(""); setUnidade("");
+    loadAll({ start: "", end: "", unidade: "" });
+  };
 
   const maxHeat = Math.max(1, ...heatmap.map((h) => h.km));
 
@@ -157,7 +161,7 @@ export default function Analytics() {
             <ExportBtn icon={FileCsv} label="CSV" onClick={() => exportData("csv")} testid="export-csv-button" />
             <ExportBtn icon={FileXls} label="EXCEL" onClick={() => exportData("xlsx")} testid="export-xlsx-button" />
             <ExportBtn icon={FilePdf} label="PDF" onClick={() => exportData("pdf")} testid="export-pdf-button" />
-            <button onClick={loadAll} disabled={loading} data-testid="analytics-refresh"
+            <button onClick={() => loadAll()} disabled={loading} data-testid="analytics-refresh"
               className="inline-flex items-center gap-2 bg-amber-500 text-[#050505] hover:bg-amber-400 disabled:opacity-50 font-bold uppercase tracking-wider text-xs px-4 py-2 rounded transition-colors">
               <ArrowsClockwise size={14} className={loading ? "animate-spin" : ""} weight="bold" /> Atualizar
             </button>
@@ -197,11 +201,11 @@ export default function Analytics() {
               onChange={(e) => setKmPerLiter(parseFloat(e.target.value) || 1)}
               className="w-20 bg-[#050505] border border-[#27272A] text-gray-200 text-sm rounded px-3 py-1.5 focus:border-amber-500 focus:outline-none transition-colors" />
           </Field>
-          <button onClick={loadAll} data-testid="apply-filters"
+          <button onClick={() => loadAll()} data-testid="apply-filters"
             className="bg-amber-500 text-[#050505] hover:bg-amber-400 font-bold uppercase tracking-wider text-xs px-5 py-2 rounded transition-colors">
             Aplicar
           </button>
-          <button onClick={() => { clearFilters(); setTimeout(loadAll, 50); }} data-testid="clear-filters"
+          <button onClick={clearFilters} data-testid="clear-filters"
             className="border border-[#27272A] text-gray-400 hover:border-amber-500 hover:text-amber-500 font-bold uppercase tracking-wider text-xs px-4 py-2 rounded transition-colors">
             Limpar
           </button>
