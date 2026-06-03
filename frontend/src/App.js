@@ -9,6 +9,11 @@ import Reports from "./pages/Reports";
 import Memory from "./pages/Memory";
 import Logs from "./pages/Logs";
 import Settings from "./pages/Settings";
+import LongMemory from "./pages/LongMemory";
+import Reminders from "./pages/Reminders";
+import GoogleHub from "./pages/GoogleHub";
+import Vision from "./pages/Vision";
+import Skills from "./pages/Skills";
 
 export default function App() {
   return (
@@ -30,9 +35,14 @@ export default function App() {
         <Route element={<Layout />}>
           <Route path="/" element={<Overview />} />
           <Route path="/chat" element={<Chat />} />
+          <Route path="/vision" element={<Vision />} />
           <Route path="/routes" element={<RoutesPage />} />
           <Route path="/reports" element={<Reports />} />
           <Route path="/memory" element={<Memory />} />
+          <Route path="/long-memory" element={<LongMemory />} />
+          <Route path="/reminders" element={<Reminders />} />
+          <Route path="/google" element={<GoogleHub />} />
+          <Route path="/skills" element={<Skills />} />
           <Route path="/logs" element={<Logs />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="*" element={<Navigate to="/" />} />

@@ -1,14 +1,6 @@
 [
     {
         "role": "Usuário",
-        "texto": "tirar relatório desta semana"
-    },
-    {
-        "role": "Sexta-feira",
-        "texto": "Senhor, eu não possuo dados para gerar relatórios semanais ou qualquer outra informação baseada em períodos de tempo. Minhas informações se restringem às distâncias das rotas entre as localidades armazenadas no meu sistema.\n\nPosso ajudar com alguma consulta sobre as rotas ou distâncias disponíveis?"
-    },
-    {
-        "role": "Usuário",
         "texto": "nossa senhora do negócio tava reativo aqui que susto"
     },
     {
@@ -118,5 +110,13 @@
     {
         "role": "Sexta-feira",
         "texto": "Senhor, a distância de UPA PEDREIRA para CASA é de 25 KM."
+    },
+    {
+        "role": "Usuário",
+        "texto": "qual a distancia de casa pra box?"
+    },
+    {
+        "role": "Sexta-feira",
+        "texto": "Senhor, a distância de CASA para BOX é de 35 KM."
     }
 ]

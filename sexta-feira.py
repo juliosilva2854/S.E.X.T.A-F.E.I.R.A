@@ -1,266 +1,300 @@
-import asyncio
-import edge_tts
-import pygame
+"""
+S.E.X.T.A - F.E.I.R.A (MAVIS) v3.0 — Aplicativo Desktop
+Loop principal de voz: wake word -> escuta -> roteia skills -> cérebro Gemini -> voz neural.
+
+Rode com:
+    python sexta-feira.py
+"""
 import os
-import json
-import pyaudio
+import sys
 import time
+import json
+import queue
+import asyncio
+import threading
+from datetime import datetime
+from pathlib import Path
 
-import speech_recognition as sr
-from vosk import Model, KaldiRecognizer, SetLogLevel
-from duckduckgo_search import DDGS
-from google import genai 
+# Carrega .env (do backend/.env por padrão)
+from dotenv import load_dotenv
+ROOT = Path(__file__).parent
+for env_file in [ROOT / "backend" / ".env", ROOT / ".env"]:
+    if env_file.exists():
+        load_dotenv(env_file)
+        break
 
-# Importando nossos próprios módulos modulares
-import config
-import rotinas
+# Garante import do pacote mavis
+sys.path.insert(0, str(ROOT))
 
-SetLogLevel(-1)
+from mavis.core import brain
+from mavis.core import router as router_core
+from mavis.core import long_memory as lm_core
+from mavis.core import reminders as rem_core
+from mavis.skills import system_info, news_weather
+from mavis.skills import vision as vision_skill
+from mavis.skills import computer as computer_skill
+from mavis.skills import scheduler as sched_skill
+from mavis.skills import proactive
+
+import pygame
+import edge_tts
+
+NOME_IA = os.environ.get("NOME_IA", "Sexta-feira")
+VOZ = os.environ.get("VOZ_SINTETIZADOR", "pt-BR-ThalitaNeural")
+PAUSE_THRESHOLD = float(os.environ.get("PAUSE_THRESHOLD", "1.0"))
+WAKE_WORD = os.environ.get("WAKE_WORD_MODEL", "hey_jarvis_v0.1")
+ATIVA_PROATIVO = os.environ.get("MAVIS_PROATIVO", "1") == "1"
+
+pygame.mixer.init()
+
 
 # ==========================================
-# MÓDULO DE VOZ E AUDIÇÃO
+# TTS - VOZ NEURAL
 # ==========================================
-def limpar_tela():
-    os.system('cls' if os.name == 'nt' else 'clear')
+async def _tts_save(texto: str, arquivo: str = "resposta.mp3"):
+    communicate = edge_tts.Communicate(texto, VOZ)
+    await communicate.save(arquivo)
 
-async def gerar_audio(texto, arquivo_saida="resposta.mp3"):
-    communicate = edge_tts.Communicate(texto, config.VOZ_SINTETIZADOR)
-    await communicate.save(arquivo_saida)
 
-def falar(texto, modelo_interrupcao=None):
-    print(f"\n{config.NOME_IA}: {texto}")
-    arquivo = "resposta.mp3"
-    asyncio.run(gerar_audio(texto, arquivo))
-    
-    pygame.mixer.init()
-    pygame.mixer.music.load(arquivo)
-    pygame.mixer.music.play()
-    
-    interrompido = False
-    
-    if modelo_interrupcao is not None:
-        reconhecedor = KaldiRecognizer(modelo_interrupcao, 16000)
-        p = pyaudio.PyAudio()
-        try:
-            stream = p.open(format=pyaudio.paInt16, channels=1, rate=16000, input=True, frames_per_buffer=8000)
-            stream.start_stream()
-            while pygame.mixer.music.get_busy():
-                data = stream.read(4000, exception_on_overflow=False)
-                if reconhecedor.AcceptWaveform(data):
-                    res = json.loads(reconhecedor.Result())
-                    txt = res.get("text", "")
-                    if any(apelido in txt for apelido in ["sexta-feira", "sexta feira", "sexta"]):
-                        pygame.mixer.music.stop() 
-                        interrompido = True
-                        break
-            stream.stop_stream()
-            stream.close()
-            p.terminate()
-        except Exception:
-            while pygame.mixer.music.get_busy():
-                pygame.time.Clock().tick(10)
-    else:
+def falar(texto: str):
+    if not texto.strip():
+        return
+    print(f"\n[{NOME_IA}] {texto}\n")
+    try:
+        asyncio.run(_tts_save(texto))
+        pygame.mixer.music.load("resposta.mp3")
+        pygame.mixer.music.play()
         while pygame.mixer.music.get_busy():
-            pygame.time.Clock().tick(10)
-            
-    pygame.mixer.quit()
-    if os.path.exists(arquivo):
-        try: os.remove(arquivo)
-        except: pass
-        
-    return interrompido 
-
-def ouvir_comando():
-    recognizer = sr.Recognizer()
-    recognizer.pause_threshold = config.PAUSE_THRESHOLD 
-    
-    with sr.Microphone() as source:
-        print("\n[ Escutando... ]", end="\r") 
-        recognizer.adjust_for_ambient_noise(source, duration=1.0)
-        try:
-            audio = recognizer.listen(source, timeout=5, phrase_time_limit=15)
-            print("[ Processando... ]      ", end="\r")
-            return recognizer.recognize_google(audio, language="pt-BR").lower()
-        except sr.UnknownValueError:
-            print("\n[AVISO]: Não entendi o que foi dito. Som ininteligível.")
-            return ""
-        except sr.RequestError as e:
-            print(f"\n[ERRO DE INTERNET/GOOGLE]: {e}")
-            return ""
-        except Exception as e:
-            print(f"\n[ERRO NO MICROFONE]: {e}")
-            return ""
-
-def vigia_offline(modelo):
-    reconhecedor = KaldiRecognizer(modelo, 16000)
-    p = pyaudio.PyAudio()
-    stream = p.open(format=pyaudio.paInt16, channels=1, rate=16000, input=True, frames_per_buffer=8000)
-    stream.start_stream()
-    
-    print(f"\n[ Radar offline ] Diga '{config.NOME_IA}'.")
-    while True:
-        data = stream.read(4000, exception_on_overflow=False)
-        if reconhecedor.AcceptWaveform(data):
-            res = json.loads(reconhecedor.Result())
-            txt = res.get("text", "")
-            if any(apelido in txt for apelido in ["sexta-feira", "sexta feira", "sexta"]):
-                stream.stop_stream()
-                stream.close()
-                p.terminate()
-                return True
-
-# ==========================================
-# MÓDULO COGNITIVO (MEMÓRIA E DB)
-# ==========================================
-def carregar_memoria_e_db():
-    # Carrega a memória de conversa
-    historico = []
-    if os.path.exists(config.ARQUIVO_MEMORIA):
-        try:
-            with open(config.ARQUIVO_MEMORIA, 'r', encoding='utf-8') as f:
-                historico = json.load(f)
-        except: pass
-        
-    # Carrega o banco de dados (A grande novidade!)
-    dados_db = "{}"
-    if os.path.exists(config.ARQUIVO_DB):
-        try:
-            with open(config.ARQUIVO_DB, 'r', encoding='utf-8') as f:
-                dados_db = f.read()
-        except: pass
-        
-    return historico, dados_db
-
-def salvar_memoria(historico):
-    with open(config.ARQUIVO_MEMORIA, 'w', encoding='utf-8') as f:
-        json.dump(historico[-15:], f, ensure_ascii=False, indent=4)
-
-def pensar(comando_usuario, historico, banco_de_dados_str):
-    palavras_tempo_real = ["hoje", "agora", "notícia", "clima", "tempo", "dólar", "previsão", "temperatura"]
-    contexto_extra = ""
-    
-    if any(p in comando_usuario for p in palavras_tempo_real):
-        print("[ Acessando rede global... ]", end="\r")
-        try:
-            resultados = DDGS().text(comando_usuario, region='br-pt', safesearch='moderate', max_results=1)
-            for res in resultados:
-                contexto_extra += f"\n[DADO AO VIVO]: {res['title']} - {res['body']}"
-        except: pass
-
-    print(f"[ {config.NOME_IA} analisando... ]      ", end="\r")
-    
-    instrucoes = f"""Você é a {config.NOME_IA}, uma inteligência artificial corporativa avançada.
-    Regras de Ouro:
-    1. Respostas ágeis, conversacionais e diretas.
-    2. Chame o usuário de 'senhor'.
-    3. Nunca use asteriscos (**) ou emojis.
-    4. Se fizer uma pergunta ao usuário, termine EXATAMENTE com a tag '[ESPERAR]'.
-    
-    BANCO DE DADOS ATUAL DO SISTEMA:
-    {banco_de_dados_str}
-    (Use as informações acima caso o usuário pergunte sobre distâncias, rotas ou planilhas armazenadas)."""
-
-    try:
-        client = genai.Client(api_key=config.CHAVE_GEMINI)
-        
-        conversa_completa = instrucoes + "\n\n"
-        for msg in historico:
-            conversa_completa += f"{msg['role']}: {msg['texto']}\n"
-            
-        conversa_completa += f"Usuário: {comando_usuario} {contexto_extra}\n{config.NOME_IA}: "
-        
-        resposta = client.models.generate_content(
-            model='gemini-2.5-flash',
-            contents=conversa_completa
-        )
-        
-        texto_resposta = resposta.text
-        
-        historico.append({'role': 'Usuário', 'texto': comando_usuario})
-        historico.append({'role': config.NOME_IA, 'texto': texto_resposta})
-        salvar_memoria(historico)
-        
-        return texto_resposta, historico
-        
+            time.sleep(0.05)
+        pygame.mixer.music.unload()
     except Exception as e:
-        print(f"\n[ERRO CRÍTICO]: {e}")
-        time.sleep(5) 
-        return "Tive um problema na sinapse com os servidores de nova geração, senhor.", historico
+        print(f"[TTS falhou: {e}]")
+
 
 # ==========================================
-# LOOP PRINCIPAL DO SISTEMA
+# STT - VOSK (português)
 # ==========================================
-if __name__ == "__main__":
-    limpar_tela()
-    print("=======================================")
-    print(f"            S.E.X.T.A - F.E.I.R.A          ")
-    print("=======================================\n")
-        
+class Listener:
+    def __init__(self):
+        import vosk
+        import speech_recognition as sr
+        self.recognizer = sr.Recognizer()
+        self.recognizer.pause_threshold = PAUSE_THRESHOLD
+        self.mic = sr.Microphone()
+
+    def listen_once(self, timeout: float = 6.0, phrase_time_limit: float = 12.0):
+        import speech_recognition as sr
+        try:
+            with self.mic as src:
+                self.recognizer.adjust_for_ambient_noise(src, duration=0.4)
+                print("(escutando...)")
+                audio = self.recognizer.listen(src, timeout=timeout, phrase_time_limit=phrase_time_limit)
+            try:
+                txt = self.recognizer.recognize_google(audio, language="pt-BR")
+                return txt
+            except sr.UnknownValueError:
+                return None
+        except sr.WaitTimeoutError:
+            return None
+
+
+# ==========================================
+# EXECUTOR DE SKILLS (desktop)
+# ==========================================
+def execute_skill_local(intent: str, raw: str) -> str:
+    """Retorna string com resultado falável."""
     try:
-        modelo_offline = Model("model")
-    except Exception:
-        print("ERRO: Pasta 'model' do Vosk não encontrada.")
-        exit()
-        
-    historico_atual, banco_de_dados = carregar_memoria_e_db()
-    falar("Pronta para operar, senhor.")
-    
-    manter_ouvido_aberto = False 
-    
-    while True:
-        if not manter_ouvido_aberto:
-            vigia_offline(modelo_offline)
-            
-        limpar_tela()
-        print("=======================================")
-        print(f"       S.E.X.T.A - F.E.I.R.A          ")
-        print("======================================\n")
-            
-        if not manter_ouvido_aberto:
-            falar("Pois não senhor?") 
-            
-        comando = ouvir_comando()
-        
-        if comando:
-            limpar_tela()
-            print("=======================================")
-            print(f"       S.E.X.T.A - F.E.I.R.A          ")
-            print("=====================================\n")
-            print(f"Você: {comando}")
-            
-            if "desligar" in comando:
-                falar("Desligando núcleos e encerrando rotinas de background. Até logo, senhor.")
-                break
+        if intent == "vision.read_screen":
+            return vision_skill.analyze_screen(raw)
 
-            else:
-                # 1. Roteador de Ações Físicas
-                resposta_da_acao = rotinas.executar_rotina_local(comando)
-                
-                texto_final = ""
-                if resposta_da_acao != "":
-                    texto_final = resposta_da_acao
-                else:
-                    # 2. Cérebro Neural (com acesso ao JSON de rotas)
-                    texto_final, historico_atual = pensar(comando, historico_atual, banco_de_dados)
-                
-                # 3. Lógica de conversa contínua
-                if "[ESPERAR]" in texto_final:
-                    manter_ouvido_aberto = True
-                    texto_final = texto_final.replace("[ESPERAR]", "").strip()
-                elif texto_final.strip().endswith('?'):
-                    manter_ouvido_aberto = True
-                else:
-                    manter_ouvido_aberto = False
-                
-                # 4. Falar resposta
-                foi_interrompida = falar(texto_final, modelo_interrupcao=modelo_offline)
-                if foi_interrompida:
-                    manter_ouvido_aberto = True
-                    
-        else:
-            limpar_tela()
-            print("=======================================")
-            print(f"       S.E.X.T.A - F.E.I.R.A          ")
-            print("=====================================\n")
-            foi_interrompida = falar("Retornando ao modo de prontidão.", modelo_interrupcao=modelo_offline)
-            manter_ouvido_aberto = foi_interrompida
+        if intent == "system.battery":
+            b = system_info.battery()
+            if b.get("percent") is None: return "Sem bateria detectada, senhor."
+            return f"Bateria em {b['percent']}%, {'ligado na tomada' if b['plugged'] else 'em modo bateria'}."
+        if intent == "system.cpu":
+            c = system_info.cpu()
+            return f"CPU em {c['percent']}%, {c['cores_logical']} threads."
+        if intent == "system.ram":
+            r = system_info.ram()
+            return f"RAM em {r['percent']}%, usando {r['used_gb']} de {r['total_gb']} gigas."
+        if intent == "system.lock":
+            return computer_skill.lock_screen()
+        if intent == "system.shutdown":
+            return computer_skill.shutdown(1)
+
+        if intent == "computer.screenshot":
+            img = vision_skill.capture_screen()
+            if img:
+                out = ROOT / "screenshots" / f"shot_{int(time.time())}.png"
+                out.parent.mkdir(exist_ok=True)
+                out.write_bytes(img)
+                return f"Print salvo em {out.name}, senhor."
+            return "Não consegui capturar a tela."
+        if intent == "computer.open_app":
+            # extrai nome após "abre "
+            nome = raw.lower()
+            for prefix in ["abre ", "ligar ", "executar ", "executa ", "abrir "]:
+                if prefix in nome:
+                    nome = nome.split(prefix, 1)[1].strip()
+                    break
+            nome = nome.replace("o ", "").replace("a ", "").strip()
+            return computer_skill.open_app(nome)
+        if intent == "computer.close_app":
+            nome = raw.lower().replace("fecha", "").replace("encerrar", "").strip()
+            return computer_skill.close_app(nome)
+
+        if intent == "media.play":   return computer_skill.media_key("play_pause")
+        if intent == "media.pause":  return computer_skill.media_key("play_pause")
+        if intent == "media.next":   return computer_skill.media_key("next")
+
+        if intent == "news.headlines":
+            return news_weather.speakable_headlines("g1")
+        if intent == "weather.today":
+            return news_weather.speakable_weather()
+
+        if intent == "calendar.today":
+            from mavis.skills import google_calendar as gc
+            return gc.speakable_today()
+        if intent == "calendar.create":
+            extracted = brain.smart_extract(
+                raw,
+                'Schema: {"summary": str, "start_iso": "YYYY-MM-DDTHH:MM:SS-03:00", '
+                '"end_iso": str|null, "location": str|null, "description": str|null}.'
+            )
+            if not extracted.get("summary") or not extracted.get("start_iso"):
+                return "Não consegui entender o título ou horário do evento."
+            from mavis.skills import google_calendar as gc
+            ev = gc.create_event(extracted["summary"], extracted["start_iso"],
+                                 extracted.get("end_iso"),
+                                 extracted.get("description") or "",
+                                 extracted.get("location") or "")
+            return f"Evento criado: {extracted['summary']}."
+
+        if intent == "gmail.unread" or intent == "gmail.summary":
+            from mavis.skills import google_gmail as gm
+            return gm.summarize_unread(5)
+
+        if intent == "drive.search":
+            from mavis.skills import google_drive as gd
+            term = raw.lower().split("drive", 1)[-1].strip().replace("?", "")
+            files = gd.search(term or raw, 5)
+            if not files: return "Nenhum arquivo encontrado, senhor."
+            return "Encontrei: " + "; ".join(f["name"] for f in files[:5])
+
+        if intent == "reminder.create":
+            extracted = brain.smart_extract(
+                raw,
+                'Schema: {"text": str, "when_iso": "YYYY-MM-DDTHH:MM:SS-03:00", '
+                '"recurrence": "daily"|"weekly"|"monthly"|null}.'
+            )
+            if not extracted.get("text") or not extracted.get("when_iso"):
+                return "Não entendi o lembrete."
+            r = rem_core.add_reminder(extracted["text"], extracted["when_iso"], extracted.get("recurrence"))
+            try:
+                sched_skill.schedule_one_shot(
+                    r["when"], lambda: falar(f"Lembrete, senhor: {r['text']}"),
+                    job_id=f"rem-{r['id']}"
+                )
+            except Exception:
+                pass
+            return f"Lembrete agendado para {extracted['when_iso'][:16].replace('T',' ')}."
+        if intent == "reminder.list":
+            items = rem_core.list_reminders(only_active=True)
+            if not items: return "Sem lembretes ativos, senhor."
+            return "Ativos: " + "; ".join(f"{i['text']} ({i['when'][:16].replace('T',' ')})" for i in items[:5])
+
+        if intent == "memory.save_fact":
+            extracted = brain.smart_extract(
+                raw,
+                'Schema: {"category":"pessoal|preferencia|trabalho|contato|lugar|agenda|outro","fact": str}.'
+            )
+            if not extracted.get("fact"):
+                return "Não captei o que devo lembrar."
+            lm_core.add_fact(extracted.get("category", "outro"), extracted["fact"])
+            return "Gravado na memória de longo prazo, senhor."
+
+        if intent == "route.legacy":
+            # Mantém compatibilidade com rotinas.py existente
+            try:
+                import rotinas
+                return rotinas.executar_rotina_local(raw, falar) or "Rotina executada."
+            except Exception as e:
+                return f"Falha na rotina legacy: {e}"
+
+        if intent == "whatsapp.read_unread":
+            from mavis.skills import whatsapp as wa
+            res = wa.list_unread(10)
+            if not res or res[0].get("error"):
+                return "Não consegui ler o WhatsApp."
+            return f"Você tem {len(res)} chats não lidos: " + ", ".join(r["chat"] for r in res[:3])
+        if intent == "whatsapp.send":
+            extracted = brain.smart_extract(
+                raw, 'Schema: {"contact": str, "message": str}.'
+            )
+            if not extracted.get("contact") or not extracted.get("message"):
+                return "Não entendi o destinatário ou mensagem."
+            from mavis.skills import whatsapp as wa
+            r = wa.send_message(extracted["contact"], extracted["message"])
+            return "Mensagem enviada." if r.get("ok") else f"Falhou: {r.get('error')}"
+
+    except Exception as e:
+        return f"Falha na skill: {e}"
+
+    return None  # cai pro brain
+
+
+# ==========================================
+# LOOP PRINCIPAL
+# ==========================================
+def processar_comando(texto: str, esperando_resposta: bool = False):
+    print(f"[USR] {texto}")
+    matched = router_core.match_intent(texto)
+    if matched and not esperando_resposta:
+        intent = matched["intent"]
+        print(f"[INTENT] {intent}")
+        result = execute_skill_local(intent, texto)
+        if result is not None:
+            falar(result)
+            return False
+    # Cai pro cérebro
+    reply, espera = brain.chat_text(texto)
+    falar(reply)
+    return espera
+
+
+def loop_principal():
+    listener = Listener()
+    falar(f"{NOME_IA} online, senhor. Sistemas operacionais.")
+
+    # Modo proativo (background)
+    if ATIVA_PROATIVO:
+        proactive.start(lambda kind, msg: falar(msg), poll_seconds=60)
+        print("[MAVIS] Modo proativo ativo.")
+
+    # Re-agenda lembretes pendentes
+    for r in rem_core.list_reminders(only_active=True):
+        try:
+            sched_skill.schedule_one_shot(
+                r["when"], lambda txt=r["text"]: falar(f"Lembrete, senhor: {txt}"),
+                job_id=f"rem-{r['id']}"
+            )
+        except Exception:
+            pass
+
+    esperando = False
+    while True:
+        try:
+            txt = listener.listen_once(timeout=8 if esperando else 30)
+            if not txt:
+                continue
+            esperando = processar_comando(txt, esperando)
+        except KeyboardInterrupt:
+            falar("Até logo, senhor.")
+            break
+        except Exception as e:
+            print(f"[ERR] {e}")
+            time.sleep(1)
+
+
+if __name__ == "__main__":
+    loop_principal()

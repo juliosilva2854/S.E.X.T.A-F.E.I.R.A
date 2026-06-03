@@ -1,11 +1,39 @@
+# MAVIS - Desktop dependencies (rodar no PC do usuário)
+# Necessita: Python 3.10+ e PortAudio instalado no SO (Windows: vem no PyAudio wheel; Linux: apt install portaudio19-dev)
+
+# Voz / áudio
 edge-tts>=7.0.0
 pygame>=2.5.2
 pyaudio>=0.2.14
 SpeechRecognition>=3.10.0
 vosk>=0.3.45
-duckduckgo-search>=5.0.0
+openwakeword>=0.6.0
+
+# Cérebro IA
 google-genai>=0.3.0
+duckduckgo-search>=5.0.0
+
+# Google ecosystem
+google-api-python-client>=2.149.0
+google-auth-httplib2>=0.2.0
+google-auth-oauthlib>=1.2.1
 gspread>=6.0.0
 oauth2client>=4.1.3
+
+# Controle do computador
+pyautogui>=0.9.54
+pyperclip>=1.9.0
+psutil>=6.1.0
+Pillow>=10.4.0
+mss>=9.0.2
+
+# Browser RPA (WhatsApp + FieldControl)
 playwright>=1.40.0
+
+# Scheduler / lembretes
+apscheduler>=3.10.4
+
+# Outros utilitários
 python-dotenv>=1.0.0
+feedparser>=6.0.11
+requests>=2.32.0
