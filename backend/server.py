@@ -444,14 +444,19 @@ async def add_reminder(body: ReminderIn):
 async def add_reminder_natural(body: ReminderNatural):
     """Cria lembrete a partir de frase natural ('amanhã às 8 me lembra de X')."""
     loop = asyncio.get_event_loop()
-    extracted = await loop.run_in_executor(
-        None,
-        lambda: brain_core.smart_extract(
-            body.phrase,
-            'Schema: {"text": str, "when_iso": "YYYY-MM-DDTHH:MM:SS-03:00", '
-            '"recurrence": "daily"|"weekly"|"monthly"|null}.'
-        ),
-    )
+    try:
+        extracted = await loop.run_in_executor(
+            None,
+            lambda: brain_core.smart_extract(
+                body.phrase,
+                'Schema: {"text": str, "when_iso": "YYYY-MM-DDTHH:MM:SS-03:00", '
+                '"recurrence": "daily"|"weekly"|"monthly"|null}.'
+            ),
+        )
+    except ValueError as e:
+        if str(e) == "RATE_LIMIT":
+            raise HTTPException(429, "IA ocupada (rate limit). Tente em ~15s.")
+        raise HTTPException(400, str(e))
     if not extracted.get("text") or not extracted.get("when_iso"):
         raise HTTPException(400, "Não consegui extrair lembrete da frase")
     r = rem_core.add_reminder(extracted["text"], extracted["when_iso"], extracted.get("recurrence"))

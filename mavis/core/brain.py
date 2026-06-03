@@ -169,6 +169,8 @@ def smart_extract(user_message: str, schema_instruction: str) -> Dict[str, Any]:
     """
     Pede ao Gemini para extrair informação estruturada em JSON.
     Usado para parsear lembretes, eventos de calendário, etc.
+    Raises ValueError em caso de quota/429 ou erro de parse, para que o caller
+    possa diferenciar 'IA ocupada' de 'frase não interpretável'.
     """
     if not CHAVE_GEMINI:
         return {}
@@ -184,5 +186,13 @@ def smart_extract(user_message: str, schema_instruction: str) -> Dict[str, Any]:
         if txt.startswith("```"):
             txt = txt.strip("`").lstrip("json").strip()
         return json.loads(txt)
-    except Exception:
+    except json.JSONDecodeError:
+        return {}
+    except Exception as e:
+        msg = str(e).lower()
+        if "429" in msg or "quota" in msg or "resource_exhausted" in msg or "rate" in msg:
+            raise ValueError("RATE_LIMIT") from e
+        # Outros erros: registra mas devolve vazio (comportamento legado)
+        import logging as _lg
+        _lg.getLogger("mavis.brain").warning("smart_extract falhou: %s", e)
         return {}
