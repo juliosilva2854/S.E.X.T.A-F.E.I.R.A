@@ -1,105 +1,96 @@
 {
-  "theme": "dark",
-  "archetype": "Archetype 2: Tactical Command Center (Modified for Industrial Brutalism)",
-  "vibe": "Iron Man JARVIS / Terminal Cyberpunk / Brutalist Tech",
-  "colors": {
-    "background": "#0A0A0A",
-    "surface": "#121212",
-    "surface_hover": "#1A1A1A",
-    "primary": "#F59E0B",
-    "primary_hover": "#D97706",
-    "text_primary": "#FFFFFF",
-    "text_secondary": "#9CA3AF",
-    "text_muted": "#52525B",
-    "border": "#27272A",
-    "border_highlight": "#F59E0B",
-    "success": "#10B981",
-    "warning": "#F59E0B",
-    "error": "#EF4444"
+  "project_context": {
+    "app_name": "Mavis/Sexta-Feira Analytics",
+    "description": "Field technician personal assistant analytics dashboard. Data-dense, control room feel.",
+    "language": "pt-BR",
+    "theme": "Dark",
+    "archetype": "Retro-Futurism / Control Room (Terminal UI)",
+    "primary_color": "Amber (#F59E0B)"
   },
-  "typography": {
-    "headings": {
-      "family": "Outfit",
-      "weights": ["300", "700"],
-      "usage": "Main dashboard titles, large metric numbers, system headers."
-    },
-    "body": {
-      "family": "JetBrains Mono",
-      "weights": ["400", "500", "700"],
-      "usage": "Logs, chat memory, route database, commands, terminal output, metrics."
-    }
-  },
-  "layout": {
-    "strategy": "Mode B: The 'Control Room' Grid",
-    "grid": "grid-cols-1 md:grid-cols-3 lg:grid-cols-4",
-    "gap": "gap-4",
-    "container_padding": "p-6",
-    "alignment": "Optical alignment, strictly left-aligned for data density and terminal feel."
-  },
-  "surfaces": {
-    "style": "Grid Borders & Retro-Futurism",
-    "border_radius": "rounded-none",
-    "borders": "1px solid #27272A",
-    "shadows": "none",
-    "glassmorphism": "forbidden, use solid dark backgrounds with hard borders only"
-  },
-  "motion": {
-    "hover": "Instant border color change to Amber (#F59E0B), slight bg lighten. No soft transitions to mimic immediate mechanical feedback.",
-    "status": "Blinking cursor for 'Listening' or 'Processing' state (animate-pulse).",
-    "logs": "New log entries appear instantly without slide animations to mimic true terminal speed."
-  },
-  "components": {
-    "real_time_status": {
-      "style": "Top bar, solid black (#0A0A0A), hard bottom border. Status tags like [ONLINE], [LISTENING] in monospace with respective colors and a blinking block cursor."
-    },
-    "chat_viewer": {
-      "style": "Log-style chat. NOT bubbly. Flat rectangular blocks or raw text lines. User: right-aligned or prefixed with 'USR >'. MAVIS: prefixed with 'SYS >' or 'MAVIS //' with amber border-left."
-    },
-    "route_database": {
-      "style": "Dense data table. border-collapse. Mono-spaced KM. Hover row highlight (bg-zinc-900). No rounded corners on the table wrapper."
-    },
-    "reports_gallery": {
-      "style": "Brutalist cards. No border-radius. Thick 1px borders. Accent colored action buttons (copy/download) with stark contrast."
-    },
-    "command_console": {
-      "style": "CLI-style input fixed at bottom or in a dedicated panel. Prefix 'MAVIS //' before input field. No border on the input itself, only on the wrapper."
-    },
-    "logs_stream": {
-      "style": "Pure terminal view. text-xs, JetBrains Mono. Color coded log levels (INFO, WARN, ERR). Auto-scroll to bottom. Deepest black background."
-    },
-    "routines_panel": {
-      "style": "Tactical grid of buttons. High contrast. 1px solid border. Hover states invert background to Amber and text to Black."
-    }
-  },
-  "icons": {
-    "library": "@phosphor-icons/react",
-    "style": "Duotone or Regular, sharp and technical."
-  },
-  "media": {
-    "image_urls": [
-      {
-        "url": "https://images.pexels.com/photos/26954237/pexels-photo-26954237.jpeg",
-        "category": "abstract_background",
-        "description": "Metallic honeycomb structure, use at very low opacity (5-10%) for empty states or login screen background to give an industrial tech feel."
-      },
-      {
-        "url": "https://images.pexels.com/photos/18337612/pexels-photo-18337612.jpeg",
-        "category": "cyber_accent",
-        "description": "Abstract digital landscape cyber grid, use inside the 'AI processing' visualizer or status card when MAVIS is actively thinking or generating a report."
+  "design_system": {
+    "typography": {
+      "font_family": "'JetBrains Mono', monospace",
+      "rules": {
+        "headings": "text-2xl md:text-3xl font-bold tracking-tight text-gray-100",
+        "kpi_values": "text-3xl md:text-5xl font-black tracking-tighter text-gray-50",
+        "labels_overlines": "text-[10px] md:text-xs uppercase tracking-[0.2em] text-amber-500 font-bold",
+        "body": "text-sm text-gray-400 leading-relaxed"
       }
-    ]
+    },
+    "colors": {
+      "background": "#050505",
+      "surface": "#0A0A0A",
+      "surface_elevated": "#141414",
+      "border": "#27272A",
+      "primary": "#F59E0B",
+      "primary_hover": "#D97706",
+      "primary_glow": "rgba(245, 158, 11, 0.15)",
+      "text_primary": "#F3F4F6",
+      "text_secondary": "#9CA3AF",
+      "text_accent": "#F59E0B"
+    },
+    "spacing_and_layout": {
+      "container": "w-full max-w-[1800px] mx-auto p-4 md:p-8",
+      "grid": "grid-cols-1 md:grid-cols-12 gap-6",
+      "card_padding": "p-5 md:p-6"
+    },
+    "surfaces_and_effects": {
+      "card_base": "bg-[#0A0A0A] border border-[#27272A] rounded-lg transition-all duration-300",
+      "card_hover": "hover:border-amber-500/50 hover:shadow-[0_0_20px_rgba(245,158,11,0.1)]",
+      "glass_header": "backdrop-blur-xl bg-[#050505]/80 border-b border-[#27272A] sticky top-0 z-50",
+      "button_primary": "bg-amber-500 text-[#050505] hover:bg-amber-400 font-bold uppercase tracking-wider text-xs md:text-sm px-4 md:px-6 py-2 rounded transition-all",
+      "button_outline": "border border-amber-500/50 text-amber-500 hover:bg-amber-500/10 hover:border-amber-500 font-bold uppercase tracking-wider text-xs md:text-sm px-3 md:px-4 py-2 rounded transition-all"
+    }
   },
-  "accessibility": {
-    "contrast": "Ensure pure white text on #0A0A0A passes APCA. Use Text Shadow if overlaid on imagery.",
-    "focus": "focus:ring-1 focus:ring-amber-500 focus:outline-none",
-    "testing": "All interactive and key informational elements MUST include a data-testid attribute in kebab-case (e.g., data-testid='command-console-input')."
+  "component_guidelines": {
+    "filter_panel": {
+      "layout": "Flex row, wrap, items-end gap-4 p-4 md:p-6 bg-[#0A0A0A] border border-[#27272A] rounded-lg mb-8",
+      "input_fields": "bg-[#050505] border border-[#27272A] text-gray-200 text-sm rounded focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all",
+      "labels": "text-[10px] uppercase tracking-widest text-gray-500 mb-1 block"
+    },
+    "kpi_cards": {
+      "layout": "col-span-1 md:col-span-3 lg:col-span-2",
+      "structure": "Top: Icon (lucide-react, text-amber-500) + Label. Middle: Large Value. Bottom: Subtext (e.g. unit/trend, text-gray-500).",
+      "style": "Use card_base and card_hover guidelines."
+    },
+    "charts": {
+      "container_style": "bg-[#0A0A0A] border border-[#27272A] rounded-lg p-6",
+      "recharts": {
+        "cartesian_grid": "<CartesianGrid strokeDasharray='3 3' stroke='#27272A' vertical={false} />",
+        "x_axis": "<XAxis stroke='#52525B' tick={{ fill: '#9CA3AF', fontSize: 12, fontFamily: 'JetBrains Mono' }} />",
+        "y_axis": "<YAxis stroke='#52525B' tick={{ fill: '#9CA3AF', fontSize: 12, fontFamily: 'JetBrains Mono' }} />",
+        "tooltip": "<Tooltip contentStyle={{ backgroundColor: '#0A0A0A', border: '1px solid #F59E0B', borderRadius: '4px', color: '#F3F4F6', fontFamily: 'JetBrains Mono' }} itemStyle={{ color: '#F59E0B' }} cursor={{ fill: '#141414' }} />",
+        "bar": "<Bar fill='#F59E0B' radius={[2, 2, 0, 0]} />",
+        "line": "<Line type='monotone' stroke='#F59E0B' strokeWidth={2} dot={{ fill: '#050505', stroke: '#F59E0B', strokeWidth: 2, r: 4 }} activeDot={{ r: 6, fill: '#F59E0B' }} />",
+        "donut": "Palette: ['#F59E0B', '#D97706', '#B45309', '#92400E', '#78350F']. Inner radius 60%, outer 80%, stroke '#0A0A0A'."
+      }
+    },
+    "leaflet_map": {
+      "container_classes": "h-[450px] w-full rounded border border-[#27272A] overflow-hidden z-0 relative",
+      "tile_layer_url": "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+      "attribution": "&copy; <a href='https://carto.com/'>CARTO</a>",
+      "heat_layer": {
+        "radius": 20,
+        "blur": 15,
+        "maxZoom": 14,
+        "gradient": { "0.4": "#fde68a", "0.6": "#f59e0b", "0.8": "#d97706", "1.0": "#b45309" }
+      },
+      "note": "Ensure Leaflet CSS is imported. Map container must have z-index strictly managed so modals/dropdowns overlay correctly."
+    },
+    "modals": {
+      "overlay": "backdrop-blur-sm bg-black/80 fixed inset-0 z-50",
+      "content": "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl bg-[#0A0A0A] border border-amber-500/50 rounded-lg shadow-[0_0_40px_rgba(245,158,11,0.15)] p-6 z-50 flex flex-col gap-4",
+      "header": "text-xl font-bold text-amber-500 uppercase tracking-widest border-b border-[#27272A] pb-4",
+      "close_button": "absolute top-4 right-4 text-gray-400 hover:text-amber-500 transition-colors"
+    },
+    "rankings_and_lists": {
+      "container": "bg-[#0A0A0A] border border-[#27272A] rounded-lg p-6",
+      "item": "flex justify-between items-center py-3 border-b border-[#27272A] last:border-0 hover:bg-[#141414] transition-colors px-2 rounded",
+      "index_badge": "text-[10px] text-amber-500 bg-amber-500/10 px-2 py-1 rounded font-bold"
+    }
   },
-  "instructions_to_main_agent": [
-    "Implement pure dark mode (no light mode toggle required as this is a command center).",
-    "Use JetBrains Mono for all data, tables, inputs, and logs. Use Outfit ONLY for large titles and prominent metrics.",
-    "Do NOT use standard rounded cards. Override Shadcn Card defaults to rounded-none and explicit 1px borders (#27272A).",
-    "The UI must feel like an industrial control panel or terminal. Prioritize data density and high contrast over white space.",
-    "Do not use generic blue gradients, teal, or purple. Stick strictly to the Obsidian, White, and Amber/Orange palette.",
-    "Implement the Chat Memory not as WhatsApp bubbles, but as terminal system logs or flat brutalist rectangles."
-  ]
+  "testing_and_accessibility": {
+    "data_testid": "ALL interactive elements (buttons, inputs, clickable cards, chart bars) MUST include a data-testid attribute in kebab-case (e.g., data-testid='export-pdf-button', data-testid='kpi-total-km').",
+    "contrast": "Ensure text contrast on hovering over amber buttons remains accessible (use black text on amber)."
+  }
 }
