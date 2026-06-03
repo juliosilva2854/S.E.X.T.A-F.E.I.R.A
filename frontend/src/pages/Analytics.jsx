@@ -20,7 +20,7 @@ export default function Analytics() {
   const [heatmap, setHeatmap] = useState([]);
   const [activities, setActivities] = useState([]);
   const [fuelCost, setFuelCost] = useState(5.89);
-  const [kmPerLiter, setKmPerLiter] = useState(12);
+  const [kmPerLiter, setKmPerLiter] = useState(10);
   const [loading, setLoading] = useState(false);
   const [monthDetail, setMonthDetail] = useState(null);
 

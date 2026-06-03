@@ -111,7 +111,23 @@ mavis/
 ### Desktop (`/app/sexta-feira.py`)
 Loop voz: STT → router.match_intent → execute_skill_local OU brain.chat_text → TTS → fala. Modo proativo background, re-agenda lembretes pendentes no startup, mantém compat com rotinas.py legacy.
 
-## Implementado nesta sessão (v4.1 - Analytics, 2026-06-03)
+## Implementado nesta sessão (v4.2 — Configurabilidade Total + Auto Weekly, 2026-06-03)
+- **Editor `.env` via UI** (`/api/env/items`, `/api/env/update`): 15 chaves editáveis com whitelist, sensíveis mascaradas com toggle de visualização, backup automático em `.env.bak` antes de cada save
+- **Upload `credenciais.json` via UI** (`/api/google/credentials`) — não precisa mais SSH; valida JSON OAuth
+- **Comandos personalizados** (`/api/custom-commands` CRUD + nova página `/commands`): regex → resposta instantânea, AVALIADOS antes do cérebro (zero latência, zero custo Gemini); 3 exemplos prontos
+- **Import em massa de relatórios** (`/api/reports/import`) — payload `{items: [...]}` para popular histórico de uma vez
+- **Auto resumo semanal**: APScheduler cron `day_of_week=fri, hour=18` (configurável via `MAVIS_AUTO_WEEKLY_HOUR`); Gemini gera texto narrativo + métricas; persiste em banco_relatorios com periodo "AUTO YYYY-Sxx"; botão "RESUMO SEMANAL AGORA" na página Relatórios pra disparar manualmente
+- **Página Docs in-app** (`/docs`) — 10 seções: setup painel, setup desktop, comandos de voz, config pelo painel, Google Cloud passo-a-passo, auto-weekly, modo proativo, import em massa, backup/restore, troubleshooting
+- **Default km/L = 10** (gasolina urbana SP, mais realista que 12)
+- **Sidebar agora com 22 itens** (Comandos + Docs adicionados)
+
+## Configuráveis pela UI (Settings)
+- Chave Gemini, Modelo Gemini, Nome IA, Voz neural, Pause threshold, Personalidade, Modo Proativo (1/0), Auto-weekly (1/0), Hora do auto-weekly, km/L do veículo, R$/L combustível, FieldControl email/senha, WhatsApp número/grupo, Planilha Google.
+
+## Resultados do auto-weekly testado
+- POST /api/reports/auto-weekly criou "AUTO 2026-S22" com texto Gemini narrativo + métricas (311 km, 13 visitas, 8 preventivas, 12 atendimentos)
+
+## Implementado em sessão anterior (v4.1)
 - **`mavis/skills/analytics.py`** — Parser inteligente sem custo LLM:
   - Detecta unidades visitadas por matching contra banco_de_dados.json (267 rotas → ~80 unidades únicas)
   - Anti-substring (UPA VILA MARIANA não duplica com VILA MARIANA)

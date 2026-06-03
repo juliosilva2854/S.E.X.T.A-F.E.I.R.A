@@ -21,6 +21,8 @@ import {
   Timer,
   CurrencyDollar,
   ChartBar,
+  Command,
+  Book,
 } from "@phosphor-icons/react";
 import { api } from "../api";
 
@@ -28,6 +30,7 @@ const NAV = [
   { to: "/", label: "Overview", icon: Terminal, end: true },
   { to: "/analytics", label: "Analytics", icon: ChartBar },
   { to: "/chat", label: "Chat Neural", icon: ChatCircle },
+  { to: "/commands", label: "Comandos", icon: Command },
   { to: "/code", label: "Code Lab", icon: Code },
   { to: "/document", label: "Document Tools", icon: Translate },
   { to: "/research", label: "Research", icon: MagnifyingGlass },
@@ -44,6 +47,7 @@ const NAV = [
   { to: "/google", label: "Google Hub", icon: GoogleLogo },
   { to: "/skills", label: "Skills", icon: Lightning },
   { to: "/logs", label: "Logs Stream", icon: ListBullets },
+  { to: "/docs", label: "Documentação", icon: Book },
   { to: "/settings", label: "Configuração", icon: GearSix },
 ];
 

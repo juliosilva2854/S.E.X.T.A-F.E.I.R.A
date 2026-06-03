@@ -209,7 +209,7 @@ def _flat_days(parsed: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     return out
 
 
-def kpis(fuel_cost_per_liter: float = 5.89, km_per_liter: float = 12.0) -> Dict[str, Any]:
+def kpis(fuel_cost_per_liter: float = 5.89, km_per_liter: float = 10.0) -> Dict[str, Any]:
     parsed = parse_all()
     days = _flat_days(parsed)
     total_km = sum(d["km"] for d in days)

@@ -292,6 +292,18 @@ async def chat(req: ChatRequest):
         raise HTTPException(400, "Mensagem vazia")
     push_log("info", f"USR > {comando}", "chat")
 
+    # 0) Custom commands do usuário (verificados primeiro)
+    try:
+        from mavis.skills import custom_commands as cc
+        custom = cc.match(comando)
+        if custom and custom.get("reply"):
+            push_log("info", f"CUSTOM > {custom['id'][:8]}", "router")
+            return ChatResponse(reply=custom["reply"], espera_resposta=False,
+                                intent="custom", skill_result={"custom_id": custom["id"]},
+                                duration_ms=0)
+    except Exception:
+        pass
+
     # 1) Tenta roteamento por intent
     matched = router_core.match_intent(comando)
     skill_result = None
@@ -1085,10 +1097,118 @@ async def kb_ask(body: KbAsk):
 
 
 # ==============================================================
+# CONFIG (.env editor + custom commands + credenciais Google + auto-report)
+# ==============================================================
+@api.get("/env/items")
+async def env_items():
+    from mavis.skills import env_manager as em
+    return em.get_all()
+
+
+class EnvPatch(BaseModel):
+    updates: Dict[str, str]
+
+
+@api.post("/env/update")
+async def env_update(body: EnvPatch):
+    from mavis.skills import env_manager as em
+    try:
+        out = em.update(body.updates)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    push_log("warn", f"ENV > atualizado: {list(body.updates.keys())}", "config")
+    return out
+
+
+@api.post("/google/credentials")
+async def upload_google_creds(file: UploadFile = File(...)):
+    """Salva o credenciais.json do OAuth Google."""
+    data = await file.read()
+    if not data:
+        raise HTTPException(400, "vazio")
+    try:
+        parsed = json.loads(data)
+        if "installed" not in parsed and "web" not in parsed:
+            raise ValueError("Formato inválido (esperado installed/web)")
+    except Exception as e:
+        raise HTTPException(400, f"JSON inválido: {e}")
+    with open(ARQUIVO_CREDENCIAIS_GOOGLE, "wb") as f:
+        f.write(data)
+    push_log("info", "credenciais.json carregado", "google")
+    return {"ok": True, "path": ARQUIVO_CREDENCIAIS_GOOGLE}
+
+
+# ---------- Custom Commands ----------
+class CustomCmdIn(BaseModel):
+    pattern: str
+    reply: str = ""
+    action: Optional[str] = None
+    args: Optional[Dict[str, Any]] = None
+    description: Optional[str] = ""
+
+
+@api.get("/custom-commands")
+async def cc_list():
+    from mavis.skills import custom_commands as cc
+    return cc.list_all()
+
+
+@api.post("/custom-commands")
+async def cc_add(body: CustomCmdIn):
+    from mavis.skills import custom_commands as cc
+    try:
+        return cc.add(body.pattern, body.reply, body.action, body.args, body.description or "")
+    except Exception as e:
+        raise HTTPException(400, f"regex inválido: {e}")
+
+
+@api.delete("/custom-commands/{cid}")
+async def cc_del(cid: str):
+    from mavis.skills import custom_commands as cc
+    if not cc.remove(cid):
+        raise HTTPException(404, "não encontrado")
+    return {"ok": True}
+
+
+# ---------- Bulk import reports ----------
+class ReportImport(BaseModel):
+    items: List[Dict[str, Any]]
+
+
+@api.post("/reports/import")
+async def reports_import(body: ReportImport):
+    data = _storage.read_json(ARQUIVO_RELATORIOS, [])
+    added = 0
+    for r in body.items:
+        if not r.get("conteudo_relatorio") and not r.get("conteudo"):
+            continue
+        novo = {
+            "id": r.get("id") or str(uuid.uuid4()),
+            "gerado_em": r.get("gerado_em") or datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+            "periodo": r.get("periodo", "Importado"),
+            "conteudo_relatorio": r.get("conteudo_relatorio") or r.get("conteudo"),
+        }
+        data.append(novo)
+        added += 1
+    _storage.write_json(ARQUIVO_RELATORIOS, data)
+    push_log("info", f"REPORTS > {added} relatórios importados", "reports")
+    return {"added": added, "total": len(data)}
+
+
+# ---------- Auto Report (gerar manualmente ou via cron) ----------
+@api.post("/reports/auto-weekly")
+async def auto_weekly():
+    from mavis.skills import auto_report as ar
+    loop = asyncio.get_event_loop()
+    out = await loop.run_in_executor(None, ar.generate_weekly)
+    return out
+
+
+# ==============================================================
 # ANALYTICS (Dashboard de KM, relatórios, atividades)
 # ==============================================================
 @api.get("/analytics/kpis")
-async def analytics_kpis(fuel_cost: float = 5.89, km_per_liter: float = 12.0):
+async def analytics_kpis(fuel_cost: float = 5.89, km_per_liter: float = 10.0):
     from mavis.skills import analytics as an
     return an.kpis(fuel_cost, km_per_liter)
 

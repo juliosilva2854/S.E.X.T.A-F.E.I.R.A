@@ -22,6 +22,8 @@ import Productivity from "./pages/Productivity";
 import Knowledge from "./pages/Knowledge";
 import Workflows from "./pages/Workflows";
 import Analytics from "./pages/Analytics";
+import Commands from "./pages/Commands";
+import Docs from "./pages/Docs";
 
 export default function App() {
   return (
@@ -43,6 +45,8 @@ export default function App() {
         <Route element={<Layout />}>
           <Route path="/" element={<Overview />} />
           <Route path="/analytics" element={<Analytics />} />
+          <Route path="/commands" element={<Commands />} />
+          <Route path="/docs" element={<Docs />} />
           <Route path="/chat" element={<Chat />} />
           <Route path="/code" element={<CodeLab />} />
           <Route path="/document" element={<DocumentTools />} />

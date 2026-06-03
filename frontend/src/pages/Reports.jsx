@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { api } from "../api";
-import { Copy, Trash, FileText, X, Plus } from "@phosphor-icons/react";
+import { Copy, Trash, FileText, X, Plus, Lightning } from "@phosphor-icons/react";
 import { toast } from "sonner";
 
 export default function Reports() {
@@ -62,6 +62,19 @@ export default function Reports() {
           className="btn-amber inline-flex items-center gap-2"
         >
           <Plus size={16} weight="bold" /> ADICIONAR
+        </button>
+        <button
+          data-testid="auto-weekly-btn"
+          onClick={async () => {
+            try {
+              const { data } = await api.post("/reports/auto-weekly");
+              if (data.created) { toast.success("Resumo semanal gerado"); load(); }
+              else toast.info(data.reason || "Sem dados");
+            } catch { toast.error("Falha"); }
+          }}
+          className="btn-ghost inline-flex items-center gap-2"
+        >
+          <Lightning size={14} weight="fill" /> RESUMO SEMANAL AGORA
         </button>
       </div>
 
