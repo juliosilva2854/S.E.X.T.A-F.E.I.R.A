@@ -23,11 +23,13 @@ import {
   ChartBar,
   Command,
   Book,
+  Robot,
 } from "@phosphor-icons/react";
 import { api } from "../api";
 
 const NAV = [
   { to: "/", label: "Overview", icon: Terminal, end: true },
+  { to: "/agent", label: "Agent Mode", icon: Robot },
   { to: "/analytics", label: "Analytics", icon: ChartBar },
   { to: "/chat", label: "Chat Neural", icon: ChatCircle },
   { to: "/commands", label: "Comandos", icon: Command },

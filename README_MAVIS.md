@@ -1,254 +1,205 @@
-# MAVIS / SEXTA-FEIRA v3.0 — Setup & Manual de Operação
+# MAVIS / SEXTA-FEIRA v4.3 — Manual Completo
 
-> IA pessoal modular: voz neural, visão computacional, controle do PC,
-> conexão Google (Calendar/Gmail/Drive), WhatsApp, lembretes, memória persistente.
+IA pessoal modular: voz neural, visão computacional, controle do PC, Google ecosystem,
+WhatsApp, lembretes, memória persistente, code lab, document tools, research, knowledge
+base, workflows, productivity, finance, analytics dashboard, **agent mode autônomo**.
 
 ---
 
 ## 1. Arquitetura
 
-| Camada | Onde roda | O que faz |
+| Camada | Onde roda | Função |
 |---|---|---|
-| **App Desktop** (`sexta-feira.py`) | Seu PC | Escuta voz, controla mouse/teclado, lê tela, conversa, executa todas as skills |
-| **Painel Web** (FastAPI + React) | Container Emergent ou seu PC | Dashboard de controle, chat por texto, Google Hub, lembretes, memória longa, visão de imagens, status |
-| **Pacote `mavis/`** | Compartilhado | Skills, cérebro, memória — usado pelos dois lados |
+| **App Desktop** (`sexta-feira.py`) | Seu PC | Voz, microfone, controle mouse/teclado, tela, todas as skills |
+| **Painel Web** (FastAPI + React) | Container ou seu PC | Dashboard, chat, todas as ferramentas, configuração |
+| **Pacote `mavis/`** | Compartilhado | 20+ módulos · core + skills |
 
-Os dois lados leem/escrevem os mesmos arquivos JSON em `/app`:
-`memoria_mavis.json`, `banco_de_dados.json`, `banco_relatorios.json`,
-`long_memory.json`, `reminders.json`.
+Arquivos JSON em `/app/` são fonte única (lidos por ambos os lados): `banco_de_dados.json`,
+`banco_relatorios.json`, `memoria_mavis.json`, `long_memory.json`, `reminders.json`,
+`todos.json`, `quick_notes.json`, `workflows.json`, `custom_commands.json`,
+`pomodoro_log.json`, `workflow_runs.json`, `kb_index.json`.
 
----
+## 2. Instalação no PC
 
-## 2. Instalação no seu PC (Desktop)
-
-### 2.1 Pré-requisitos
-- **Python 3.10+**
-- **PortAudio** (para microfone):
-  - Windows: já vem nos wheels do PyAudio
-  - Linux: `sudo apt install portaudio19-dev python3-pyaudio`
-  - macOS: `brew install portaudio`
-- **Google Chrome** instalado (para WhatsApp Web via Playwright)
-
-### 2.2 Clone e dependências
 ```bash
-git clone <seu-repo> mavis && cd mavis
+git clone <repo> mavis && cd mavis
 pip install -r requirements.txt
 playwright install chromium
+python sexta-feira.py
 ```
 
-### 2.3 Configure o `.env`
-Crie `/app/backend/.env` (ou `/app/.env`) com:
-```env
-CHAVE_GEMINI=AIzaSy...sua-chave...
+**Pré-requisitos**:
+- Python 3.10+
+- PortAudio: Linux `sudo apt install portaudio19-dev` · macOS `brew install portaudio`
+- Chrome instalado (WhatsApp/FieldControl via Playwright)
+- credenciais.json do Google (opcional, veja §5)
+
+## 3. Configuração — backend/.env
+
+Editável pelo painel em **Configuração → Editor .ENV** (15 campos):
+
+```
+CHAVE_GEMINI=AIzaSy...
 GEMINI_MODEL=gemini-2.5-flash
 NOME_IA=Sexta-feira
 VOZ_SINTETIZADOR=pt-BR-ThalitaNeural
 PAUSE_THRESHOLD=1.0
+MAVIS_PERSONALITY=corporativa     # corporativa | casual | sarcastica
 MAVIS_PROATIVO=1
-MAVIS_PERSONALITY=corporativa
-
-FIELDCONTROL_EMAIL=seu@email.com
-FIELDCONTROL_SENHA=sua_senha
+MAVIS_AUTO_WEEKLY=1               # auto resumo toda sexta
+MAVIS_AUTO_WEEKLY_HOUR=18
+MAVIS_KM_PER_LITER=10
+MAVIS_FUEL_COST=5.89
+FIELDCONTROL_EMAIL=...
+FIELDCONTROL_SENHA=...
 WHATSAPP_NUMERO=5511...
-WHATSAPP_GRUPO=Resumos - ToLife
+WHATSAPP_GRUPO=...
+PLANILHA_NOME=...
 ```
 
-### 2.4 Rode
-```bash
-python sexta-feira.py
-```
+Backup automático em `.env.bak` antes de cada save pelo painel.
 
----
+## 4. Páginas do Painel (23 áreas)
 
-## 3. Habilitando o Google Cloud Console (passo-a-passo)
+| Rota | Função |
+|---|---|
+| `/` | Overview com KPIs, logs live, últimos relatórios |
+| `/agent` | **Agent Mode** — meta autônoma com 21 ferramentas |
+| `/analytics` | Dashboard de KM, custo combustível, mapa de calor, top destinos |
+| `/chat` | Chat com Gemini + TTS browser + ditado por voz |
+| `/commands` | Comandos personalizados (regex → resposta instantânea) |
+| `/code` | Code Lab — gerar/explicar/revisar/refatorar/converter/debug/executar Python |
+| `/document` | Resumir, traduzir, reescrever, sentimento, compor email |
+| `/research` | Dossier multi-step (subqueries → web → síntese) |
+| `/knowledge` | Knowledge Base (upload PDF/TXT/MD + Q&A com fontes) |
+| `/workflows` | Macros visuais com interpolação `{{label}}` |
+| `/productivity` | Pomodoro + Quick Notes + Todos |
+| `/finance` | Cotações (USD/EUR/BTC) + calc empréstimo + juros compostos |
+| `/vision` | Upload de imagem → análise Gemini Vision |
+| `/routes` | CRUD do banco de 267 rotas KM |
+| `/reports` | CRUD de relatórios + auto-weekly + import em massa |
+| `/memory` | Memória curta de conversa |
+| `/long-memory` | Fatos persistentes por categoria |
+| `/reminders` | Lembretes + criação por linguagem natural |
+| `/google` | Status OAuth + agenda + emails + drive |
+| `/skills` | Catálogo + telemetria CPU/RAM/disco/clima + manchetes |
+| `/logs` | Stream em tempo real (WebSocket) |
+| `/docs` | Esta documentação dentro do app |
+| `/settings` | Editor .env + personalidade + voz + upload credenciais.json |
 
-A MAVIS usa **Calendar / Gmail / Drive / Sheets**. Você precisa criar suas próprias credenciais OAuth (gratuito).
+## 5. Google Cloud Console — Passo-a-passo
 
-### Passo 3.1 — Criar projeto no Google Cloud
-1. Acesse https://console.cloud.google.com
-2. Topo da tela, clique no seletor de projeto **→ NOVO PROJETO**
-3. Nome: `MAVIS` (ou outro qualquer) → **Criar**
+1. **console.cloud.google.com → Novo projeto** "MAVIS"
+2. **APIs e Serviços → Biblioteca** — habilitar:
+   - Google Calendar API
+   - Gmail API
+   - Google Drive API
+   - Google Sheets API
+3. **Tela de consentimento OAuth → External**
+   - Preencha nome do app, email
+   - **Test users**: ADICIONE SEU EMAIL (crítico, senão Google bloqueia)
+4. **Credenciais → + Criar credenciais → ID do cliente OAuth**
+   - Tipo: **Aplicativo para computador**
+   - Nome: "MAVIS Desktop"
+   - **Download JSON**
+5. **No painel → Configuração → Google Credenciais → CARREGAR credenciais.json**
+6. Rode `python sexta-feira.py` uma vez no PC → navegador abrirá → consentimento → token salvo
 
-### Passo 3.2 — Habilitar as APIs necessárias
-No menu lateral: **APIs e Serviços → Biblioteca**. Habilite uma por uma:
-- ✅ **Google Calendar API**
-- ✅ **Gmail API**
-- ✅ **Google Drive API**
-- ✅ **Google Sheets API** (já usado pelas planilhas)
+**Escopos**: calendar (RW), gmail.modify+send, drive.readonly, spreadsheets
 
-Para cada uma: digite o nome → clique → **Ativar**.
+## 6. Comandos de Voz
 
-### Passo 3.3 — Configurar tela de consentimento OAuth
-1. **APIs e Serviços → Tela de consentimento OAuth**
-2. **User Type**: External → **Criar**
-3. Preencha:
-   - Nome do app: `MAVIS`
-   - Email de suporte: seu email
-   - Email do desenvolvedor: seu email
-4. **Salvar e continuar** até a aba **Test users**
-5. Em **Test users**, clique **+ ADD USERS** e adicione seu próprio email Google
-6. **Salvar**
+| Categoria | Exemplos |
+|---|---|
+| Sistema | "qual a bateria", "uso de CPU", "RAM", "trava o PC" |
+| Computador | "abre Chrome", "fecha Spotify", "tira print" |
+| Visão | "olha a tela", "o que tem na tela" |
+| Google | "minha agenda hoje", "marca reunião amanhã 14h", "tenho email" |
+| WhatsApp | "mensagens não lidas", "manda mensagem pro Pedro: ..." |
+| Memória | "lembra disso: X", "me lembra de Y amanhã às 8h" |
+| Mídia | "play música", "pausa", "próxima música" |
+| Info | "notícias", "manchetes", "clima hoje" |
+| Legado | "aprender rotas", "atualizar planilha", "gerar relatório" |
+| Custom | qualquer regex que você cadastrar em `/commands` |
 
-> ⚠️ Sem adicionar seu email como Test user, o Google bloqueia (app não verificado).
+## 7. Agent Mode (v4.3 NOVO)
 
-### Passo 3.4 — Criar credencial OAuth (Desktop App)
-1. **APIs e Serviços → Credenciais → + CRIAR CREDENCIAIS → ID do cliente OAuth**
-2. Tipo de aplicativo: **Aplicativo para computador**
-3. Nome: `MAVIS Desktop` → **Criar**
-4. Surge um popup → clique **DOWNLOAD JSON**
-5. Salve o arquivo em `/app/credenciais.json` (ou caminho que estiver no `.env`)
+`/agent`: dê uma meta complexa, a MAVIS planeja com Gemini, executa até 6 ferramentas
+sequencialmente e sintetiza resposta final. **21 ferramentas disponíveis**:
 
-### Passo 3.5 — Primeiro login (consentimento)
-Na primeira vez que a MAVIS tentar acessar Google (chat "qual minha agenda?"), o navegador abrirá pedindo:
-- Login na sua conta Google
-- Tela "Google não verificou este app" → **Avançado → Acessar MAVIS (não seguro)**
-- Aceite os escopos solicitados (Calendar, Gmail, Drive, Sheets)
-- Token salvo em `/app/google_token.json` automaticamente
+`calendar_today`, `calendar_week`, `gmail_summary`, `gmail_unread`, `weather`,
+`news_headlines`, `web_search`, `analytics_kpis`, `analytics_weekly`, `analytics_monthly`,
+`list_reports`, `search_routes`, `system_info`, `list_facts`, `list_reminders`,
+`knowledge_ask`, `summarize_text`, `forex`, `add_reminder`, `add_note`, `no_op`.
 
-A partir daí tudo funciona silenciosamente.
+Exemplos prontos: "Faz um briefing executivo do meu dia", "Resume o que rodei essa semana",
+"Investiga: equipamentos com maior taxa de falha em 2026".
 
-### Escopos solicitados:
-```
-https://www.googleapis.com/auth/calendar          (RW)
-https://www.googleapis.com/auth/gmail.modify      (ler/marcar)
-https://www.googleapis.com/auth/gmail.send        (enviar)
-https://www.googleapis.com/auth/drive.readonly    (buscar)
-https://www.googleapis.com/auth/spreadsheets      (KM planilha)
-```
+## 8. Auto Resumo Semanal
 
----
+Toda **sexta às 18h** (configurável via `MAVIS_AUTO_WEEKLY_HOUR`), MAVIS roda automaticamente:
+1. Lê stats da semana via `analytics.weekly_series()`
+2. Gemini gera texto narrativo executivo
+3. Salva como relatório `"AUTO YYYY-Sxx"`
 
-## 4. Comandos de voz suportados
+Forçar manualmente: **Relatórios → RESUMO SEMANAL AGORA** ou `POST /api/reports/auto-weekly`.
 
-### Sistema
-- "qual minha bateria"
-- "uso de CPU" / "RAM"
-- "trava o PC" / "desliga o PC"
+## 9. Endpoints REST (~80)
 
-### Computador
-- "abre o Chrome" / "fecha o Spotify"
-- "tira print" (salva em `screenshots/`)
-- "olha a tela" / "o que tem na tela" → MAVIS analisa com Gemini Vision
+Ver seção 15 da página `/docs` no painel. Principais:
+- Chat/Agent: `/api/chat`, `/api/agent/run`, `/api/agent/tools`
+- Analytics: `/api/analytics/{kpis,weekly,monthly,daily,heatmap,activities,month/{YYYY-MM}}`
+- Config: `/api/env/items`, `/api/env/update`, `/api/google/credentials` (upload)
+- Reports: `/api/reports`, `/api/reports/import`, `/api/reports/auto-weekly`
+- Code: `/api/code/{generate,explain,review,refactor,convert,debug,execute}`
+- Doc: `/api/doc/{summarize,translate,rewrite,key-points,sentiment,compose-email}`
+- Research/KB: `/api/research`, `/api/knowledge/{documents,ask}`
+- Workflows: `/api/workflows`, `/api/workflows/{id}/run`
+- Productivity: `/api/notes`, `/api/todos`, `/api/pomodoro/{log,stats}`
+- Finance: `/api/finance/{forex,multi,crypto,loan,compound}`
+- Custom Commands: `/api/custom-commands` CRUD
+- Google: `/api/google/{status,calendar,gmail,drive}`
+- Vision: `/api/vision/analyze` (multipart)
+- Sistema: `/api/system/info`, `/api/news`, `/api/weather`, `/api/skills`
+- Logs: `/api/logs`, WebSocket `/api/logs/stream`
 
-### Google
-- "minha agenda de hoje"
-- "agenda da semana"
-- "marca reunião amanhã às 14h sobre projeto X"
-- "tenho email" / "resumo dos emails"
-- "busca relatório no drive"
+## 10. Backup & Restore
 
-### WhatsApp
-- "tenho mensagens" / "mensagens não lidas no whats"
-- "manda mensagem pro Pedro: estou chegando"
+Tudo em `/app/*.json`. Backup = zip. Restore = colar de volta + restart backend.
+`.env.bak` é gerado automaticamente a cada save pelo painel.
 
-### Memória & Lembretes
-- "lembra disso: minha esposa se chama Maria"
-- "me lembra de tomar remédio amanhã às 8h"
-- "quais meus lembretes?"
-
-### Mídia
-- "toca música" / "pausa" / "próxima música"
-
-### Informação
-- "notícias" / "manchetes"
-- "clima hoje" / "vai chover?"
-
-### Rotinas legacy (mantidas)
-- "aprender rotas"
-- "atualizar planilha"
-- "gerar relatório"
-
----
-
-## 5. Painel Web
-
-Backend: `uvicorn server:app` (auto-iniciado pelo supervisor no container Emergent)
-Frontend: `yarn start` (auto-iniciado)
-
-Navegue: **Overview → Chat → Visão → Rotas → Relatórios → Memória Curta → Memória Longa → Lembretes → Google Hub → Skills → Logs → Configuração**
-
----
-
-## 6. Modo Proativo
-
-Quando `MAVIS_PROATIVO=1` no `.env`, a MAVIS roda um loop em background que:
-- ✅ Dispara lembretes na hora marcada (com voz)
-- ✅ Alerta bateria <20% (a cada 5min)
-- ✅ Avisa "reunião em 15 minutos" para próximos eventos do Calendar
-- (mais avisos podem ser adicionados em `mavis/skills/proactive.py`)
-
----
-
-## 7. Personalidade
-
-Mude o tom da MAVIS no Painel → Configuração → Personalidade:
-- **corporativa** (JARVIS, "senhor", padrão)
-- **casual** (amiga próxima)
-- **sarcastica** (humor afiado, "chefe")
-
-Ou no `.env`: `MAVIS_PERSONALITY=casual`
-
----
-
-## 8. Wake word (opcional)
-
-Por padrão a MAVIS escuta sempre. Para ativá-la só com palavra-chave:
-1. `pip install openwakeword`
-2. No seu loop custom, chame `mavis.skills.wake_word.start_listener(callback)`
-3. Use modelo padrão `hey_jarvis_v0.1` ou treine "sexta-feira" próprio: https://github.com/dscripka/openWakeWord
-
----
-
-## 9. Estrutura de pastas
-
-```
-/app
-├── mavis/                  # Pacote compartilhado
-│   ├── core/
-│   │   ├── brain.py        # Gemini + multimodal + extração estruturada
-│   │   ├── long_memory.py  # Fatos persistentes
-│   │   ├── reminders.py    # Lembretes/alarmes
-│   │   ├── router.py       # Roteador de intents (regex)
-│   │   ├── paths.py
-│   │   └── storage.py
-│   └── skills/
-│       ├── computer.py     # PyAutoGUI (desktop)
-│       ├── vision.py       # Screenshot + Gemini Vision
-│       ├── system_info.py  # Bateria/CPU/RAM/Disk
-│       ├── whatsapp.py     # Playwright (desktop)
-│       ├── google_auth.py  # OAuth shared
-│       ├── google_calendar.py
-│       ├── google_gmail.py
-│       ├── google_drive.py
-│       ├── scheduler.py    # APScheduler
-│       ├── proactive.py    # Loop proativo
-│       ├── wake_word.py    # openWakeWord
-│       └── news_weather.py # RSS + Open-Meteo
-├── sexta-feira.py          # App desktop (voz)
-├── rotinas.py              # Rotinas legacy (FieldControl, etc)
-├── relatorios.py
-├── planilhas.py
-├── aprender_rotas.py
-├── backend/                # FastAPI
-│   ├── server.py
-│   └── .env                # CHAVE_GEMINI, configs
-├── frontend/               # React + Tailwind
-└── *.json                  # Estado (rotas, memórias, lembretes, relatórios)
-```
-
----
-
-## 10. Troubleshooting
+## 11. Troubleshooting
 
 | Sintoma | Solução |
 |---|---|
-| `portaudio.h not found` | Linux: `sudo apt install portaudio19-dev`. Windows: instale o wheel oficial do PyAudio. |
-| Google "app not verified" | Adicione seu email em **Test users** na tela de consentimento OAuth (passo 3.3). |
-| `credenciais.json não encontrado` | Coloque em `/app/credenciais.json` ou ajuste `ARQUIVO_CREDENCIAIS_GOOGLE` no `.env`. |
-| WhatsApp não abre | Rode `playwright install chromium`. Primeira vez precisa escanear QR code. |
-| Voz não toca | Sistema sem áudio. Teste outra voz no Painel → Configuração. |
-| Wake word não detecta | Treine modelo custom em openWakeWord ou use modelo padrão `hey_jarvis`. |
+| Google "app not verified" | Adicione seu email em Test users da OAuth consent screen |
+| `portaudio.h not found` | Linux `sudo apt install portaudio19-dev` |
+| TTS 403 | `pip install -U edge-tts` (>= 7.0) |
+| Rate limit Gemini | Free tier 5 req/min, aguarde 60s |
+| WhatsApp não abre | `playwright install chromium` + escanear QR uma vez |
+| Painel OFFLINE | Verifique `sudo supervisorctl status` e logs |
+| Voz não toca | Permitir áudio do site no browser |
+| Agent plano vazio | Gemini retornou JSON inválido — meta mais clara |
+
+## 12. Estrutura de pastas
+
+```
+/app
+├── mavis/
+│   ├── core/         brain, long_memory, reminders, router, paths, storage
+│   └── skills/       computer, vision, system_info, google_*, whatsapp,
+│                     scheduler, proactive, wake_word, news_weather,
+│                     code_assistant, python_sandbox, document_tools, research,
+│                     finance, productivity, workflows, knowledge, analytics,
+│                     env_manager, custom_commands, auto_report, agent
+├── sexta-feira.py    Desktop loop voz
+├── rotinas.py        Legado FieldControl/Relatórios/Planilhas
+├── relatorios.py · planilhas.py · aprender_rotas.py
+├── backend/          FastAPI server.py + .env
+├── frontend/         React + Tailwind + Recharts
+└── *.json            Estado persistente
+```
 
 ---
 
-Última atualização: Jun 2026
+Última atualização: Jun 2026 · MAVIS v4.3

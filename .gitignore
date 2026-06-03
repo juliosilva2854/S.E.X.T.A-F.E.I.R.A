@@ -24,3 +24,8 @@ sessao_whatsapp/Default/Local Storage/
 node_modules/
 build/
 .next/
+.env.*
+credentials.json
+*.pem
+*.key
+.credentials

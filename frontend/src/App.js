@@ -24,6 +24,7 @@ import Workflows from "./pages/Workflows";
 import Analytics from "./pages/Analytics";
 import Commands from "./pages/Commands";
 import Docs from "./pages/Docs";
+import Agent from "./pages/Agent";
 
 export default function App() {
   return (
@@ -44,6 +45,7 @@ export default function App() {
       <Routes>
         <Route element={<Layout />}>
           <Route path="/" element={<Overview />} />
+          <Route path="/agent" element={<Agent />} />
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/commands" element={<Commands />} />
           <Route path="/docs" element={<Docs />} />

@@ -1205,8 +1205,32 @@ async def auto_weekly():
 
 
 # ==============================================================
-# ANALYTICS (Dashboard de KM, relatórios, atividades)
+# AGENT MODE (autônomo)
 # ==============================================================
+class AgentReq(BaseModel):
+    goal: str
+
+
+@api.post("/agent/run")
+async def agent_run(req: AgentReq):
+    from mavis.skills import agent as ag
+    if not req.goal.strip():
+        raise HTTPException(400, "meta vazia")
+    push_log("info", f"AGENT > {req.goal[:120]}", "agent")
+    loop = asyncio.get_event_loop()
+    out = await loop.run_in_executor(None, lambda: ag.run(req.goal))
+    push_log("info", f"AGENT > done ({len(out['steps'])} steps)", "agent")
+    return out
+
+
+@api.get("/agent/tools")
+async def agent_tools():
+    from mavis.skills.agent import TOOLS
+    return TOOLS
+
+
+# ==============================================================
+# ANALYTICS
 @api.get("/analytics/kpis")
 async def analytics_kpis(fuel_cost: float = 5.89, km_per_liter: float = 10.0):
     from mavis.skills import analytics as an
