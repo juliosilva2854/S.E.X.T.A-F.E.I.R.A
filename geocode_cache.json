@@ -1,0 +1,590 @@
+{
+  "CASA": {
+    "lat": -23.5505,
+    "lng": -46.6333,
+    "source": "seed",
+    "name": "CASA"
+  },
+  "BOX": {
+    "lat": -23.5489,
+    "lng": -46.6388,
+    "source": "seed",
+    "name": "BOX"
+  },
+  "UPA VERA CRUZ": {
+    "lat": -23.587,
+    "lng": -46.571,
+    "source": "seed",
+    "name": "UPA VERA CRUZ"
+  },
+  "UPA SANTO AMARO": {
+    "lat": -23.6562,
+    "lng": -46.71,
+    "source": "seed",
+    "name": "UPA SANTO AMARO"
+  },
+  "UPA VILA MARIANA": {
+    "lat": -23.5878,
+    "lng": -46.6346,
+    "source": "seed",
+    "name": "UPA VILA MARIANA"
+  },
+  "UPA VILA MORAES": {
+    "lat": -23.623,
+    "lng": -46.552,
+    "source": "seed",
+    "name": "UPA VILA MORAES"
+  },
+  "UPA VILA NOVA SABARA": {
+    "lat": -23.6442,
+    "lng": -46.5234,
+    "source": "seed",
+    "name": "UPA VILA NOVA SABARA"
+  },
+  "UPA SAPOPEMBA": {
+    "lat": -23.6202,
+    "lng": -46.5077,
+    "source": "seed",
+    "name": "UPA SAPOPEMBA"
+  },
+  "UPA SACOMA": {
+    "lat": -23.6125,
+    "lng": -46.601,
+    "source": "seed",
+    "name": "UPA SACOMA"
+  },
+  "UPA JABAQUARA": {
+    "lat": -23.65,
+    "lng": -46.645,
+    "source": "seed",
+    "name": "UPA JABAQUARA"
+  },
+  "UPA HELIOPOLIS": {
+    "lat": -23.6235,
+    "lng": -46.6072,
+    "source": "seed",
+    "name": "UPA HELIOPOLIS"
+  },
+  "UPA IPIRANGA": {
+    "lat": -23.586,
+    "lng": -46.601,
+    "source": "seed",
+    "name": "UPA IPIRANGA"
+  },
+  "UPA CAMPO LIMPO": {
+    "lat": -23.658,
+    "lng": -46.753,
+    "source": "seed",
+    "name": "UPA CAMPO LIMPO"
+  },
+  "UPA CAMPO BELO": {
+    "lat": -23.626,
+    "lng": -46.672,
+    "source": "seed",
+    "name": "UPA CAMPO BELO"
+  },
+  "UPA SAUDE": {
+    "lat": -23.619,
+    "lng": -46.639,
+    "source": "seed",
+    "name": "UPA SAUDE"
+  },
+  "UPA AGUA RASA": {
+    "lat": -23.5648,
+    "lng": -46.579,
+    "source": "seed",
+    "name": "UPA AGUA RASA"
+  },
+  "UPA TATUAPE": {
+    "lat": -23.5394,
+    "lng": -46.5733,
+    "source": "seed",
+    "name": "UPA TATUAPE"
+  },
+  "UPA TIRADENTES": {
+    "lat": -23.5505,
+    "lng": -46.6333,
+    "source": "seed",
+    "name": "UPA TIRADENTES"
+  },
+  "UPA PARI": {
+    "lat": -23.531,
+    "lng": -46.6155,
+    "source": "seed",
+    "name": "UPA PARI"
+  },
+  "UPA PIRITUBA": {
+    "lat": -23.4825,
+    "lng": -46.737,
+    "source": "seed",
+    "name": "UPA PIRITUBA"
+  },
+  "UPA PERUS": {
+    "lat": -23.4007,
+    "lng": -46.753,
+    "source": "seed",
+    "name": "UPA PERUS"
+  },
+  "UPA TREMEMBE": {
+    "lat": -23.464,
+    "lng": -46.597,
+    "source": "seed",
+    "name": "UPA TREMEMBE"
+  },
+  "UPA JACANA": {
+    "lat": -23.481,
+    "lng": -46.58,
+    "source": "seed",
+    "name": "UPA JACANA"
+  },
+  "UPA VILA NOVA CACHOEIRINHA": {
+    "lat": -23.4775,
+    "lng": -46.662,
+    "source": "seed",
+    "name": "UPA VILA NOVA CACHOEIRINHA"
+  },
+  "UPA BRASILANDIA": {
+    "lat": -23.457,
+    "lng": -46.666,
+    "source": "seed",
+    "name": "UPA BRASILANDIA"
+  },
+  "UPA FREGUESIA": {
+    "lat": -23.497,
+    "lng": -46.692,
+    "source": "seed",
+    "name": "UPA FREGUESIA"
+  },
+  "UPA SAO MIGUEL": {
+    "lat": -23.498,
+    "lng": -46.444,
+    "source": "seed",
+    "name": "UPA SAO MIGUEL"
+  },
+  "UPA ITAIM PAULISTA": {
+    "lat": -23.504,
+    "lng": -46.404,
+    "source": "seed",
+    "name": "UPA ITAIM PAULISTA"
+  },
+  "UPA ERMELINO MATARAZZO": {
+    "lat": -23.5005,
+    "lng": -46.483,
+    "source": "seed",
+    "name": "UPA ERMELINO MATARAZZO"
+  },
+  "UPA PENHA": {
+    "lat": -23.531,
+    "lng": -46.54,
+    "source": "seed",
+    "name": "UPA PENHA"
+  },
+  "UPA ARICANDUVA": {
+    "lat": -23.567,
+    "lng": -46.531,
+    "source": "seed",
+    "name": "UPA ARICANDUVA"
+  },
+  "UPA VILA FORMOSA": {
+    "lat": -23.566,
+    "lng": -46.551,
+    "source": "seed",
+    "name": "UPA VILA FORMOSA"
+  },
+  "UPA SAO MATEUS": {
+    "lat": -23.601,
+    "lng": -46.476,
+    "source": "seed",
+    "name": "UPA SAO MATEUS"
+  },
+  "UPA CIDADE TIRADENTES": {
+    "lat": -23.587,
+    "lng": -46.404,
+    "source": "seed",
+    "name": "UPA CIDADE TIRADENTES"
+  },
+  "UPA GUAIANASES": {
+    "lat": -23.539,
+    "lng": -46.415,
+    "source": "seed",
+    "name": "UPA GUAIANASES"
+  },
+  "UPA LAJEADO": {
+    "lat": -23.547,
+    "lng": -46.422,
+    "source": "seed",
+    "name": "UPA LAJEADO"
+  },
+  "UPA CIDADE LIDER": {
+    "lat": -23.574,
+    "lng": -46.469,
+    "source": "seed",
+    "name": "UPA CIDADE LIDER"
+  },
+  "UPA ITAQUERA": {
+    "lat": -23.536,
+    "lng": -46.457,
+    "source": "seed",
+    "name": "UPA ITAQUERA"
+  },
+  "UPA JOSE BONIFACIO": {
+    "lat": -23.5575,
+    "lng": -46.447,
+    "source": "seed",
+    "name": "UPA JOSE BONIFACIO"
+  },
+  "UPA PARELHEIROS": {
+    "lat": -23.827,
+    "lng": -46.727,
+    "source": "seed",
+    "name": "UPA PARELHEIROS"
+  },
+  "UPA GRAJAU": {
+    "lat": -23.76,
+    "lng": -46.694,
+    "source": "seed",
+    "name": "UPA GRAJAU"
+  },
+  "UPA M'BOI MIRIM": {
+    "lat": -23.722,
+    "lng": -46.743,
+    "source": "seed",
+    "name": "UPA M'BOI MIRIM"
+  },
+  "UPA CAPAO REDONDO": {
+    "lat": -23.677,
+    "lng": -46.777,
+    "source": "seed",
+    "name": "UPA CAPAO REDONDO"
+  },
+  "UPA JARDIM ANGELA": {
+    "lat": -23.708,
+    "lng": -46.779,
+    "source": "seed",
+    "name": "UPA JARDIM ANGELA"
+  },
+  "UPA JARDIM SAO LUIS": {
+    "lat": -23.68,
+    "lng": -46.732,
+    "source": "seed",
+    "name": "UPA JARDIM SAO LUIS"
+  },
+  "UPA SOCORRO": {
+    "lat": -23.658,
+    "lng": -46.705,
+    "source": "seed",
+    "name": "UPA SOCORRO"
+  },
+  "UPA INTERLAGOS": {
+    "lat": -23.697,
+    "lng": -46.677,
+    "source": "seed",
+    "name": "UPA INTERLAGOS"
+  },
+  "UPA CIDADE ADEMAR": {
+    "lat": -23.677,
+    "lng": -46.647,
+    "source": "seed",
+    "name": "UPA CIDADE ADEMAR"
+  },
+  "UPA PEDREIRA": {
+    "lat": -23.697,
+    "lng": -46.647,
+    "source": "seed",
+    "name": "UPA PEDREIRA"
+  },
+  "UPA AMERICANOPOLIS": {
+    "lat": -23.662,
+    "lng": -46.639,
+    "source": "seed",
+    "name": "UPA AMERICANOPOLIS"
+  },
+  "UPA CURSINO": {
+    "lat": -23.619,
+    "lng": -46.6172,
+    "source": "seed",
+    "name": "UPA CURSINO"
+  },
+  "UPA SAO LUCAS": {
+    "lat": -23.608,
+    "lng": -46.565,
+    "source": "seed",
+    "name": "UPA SAO LUCAS"
+  },
+  "UPA CARRAO": {
+    "lat": -23.545,
+    "lng": -46.546,
+    "source": "seed",
+    "name": "UPA CARRAO"
+  },
+  "UPA CANGAIBA": {
+    "lat": -23.506,
+    "lng": -46.521,
+    "source": "seed",
+    "name": "UPA CANGAIBA"
+  },
+  "UPA VILA MATILDE": {
+    "lat": -23.543,
+    "lng": -46.531,
+    "source": "seed",
+    "name": "UPA VILA MATILDE"
+  },
+  "UPA VILA MARIA": {
+    "lat": -23.506,
+    "lng": -46.591,
+    "source": "seed",
+    "name": "UPA VILA MARIA"
+  },
+  "UPA VILA GUILHERME": {
+    "lat": -23.517,
+    "lng": -46.608,
+    "source": "seed",
+    "name": "UPA VILA GUILHERME"
+  },
+  "UPA SANTANA": {
+    "lat": -23.506,
+    "lng": -46.626,
+    "source": "seed",
+    "name": "UPA SANTANA"
+  },
+  "UPA CASA VERDE": {
+    "lat": -23.507,
+    "lng": -46.662,
+    "source": "seed",
+    "name": "UPA CASA VERDE"
+  },
+  "UPA LIMAO": {
+    "lat": -23.499,
+    "lng": -46.6695,
+    "source": "seed",
+    "name": "UPA LIMAO"
+  },
+  "UPA BUTANTA": {
+    "lat": -23.5715,
+    "lng": -46.718,
+    "source": "seed",
+    "name": "UPA BUTANTA"
+  },
+  "UPA RIO PEQUENO": {
+    "lat": -23.566,
+    "lng": -46.751,
+    "source": "seed",
+    "name": "UPA RIO PEQUENO"
+  },
+  "UPA RAPOSO TAVARES": {
+    "lat": -23.587,
+    "lng": -46.78,
+    "source": "seed",
+    "name": "UPA RAPOSO TAVARES"
+  },
+  "UPA VILA SONIA": {
+    "lat": -23.597,
+    "lng": -46.74,
+    "source": "seed",
+    "name": "UPA VILA SONIA"
+  },
+  "UPA MORUMBI": {
+    "lat": -23.608,
+    "lng": -46.711,
+    "source": "seed",
+    "name": "UPA MORUMBI"
+  },
+  "UPA JAGUARE": {
+    "lat": -23.547,
+    "lng": -46.753,
+    "source": "seed",
+    "name": "UPA JAGUARE"
+  },
+  "UPA LAPA": {
+    "lat": -23.526,
+    "lng": -46.7065,
+    "source": "seed",
+    "name": "UPA LAPA"
+  },
+  "UPA BARRA FUNDA": {
+    "lat": -23.526,
+    "lng": -46.665,
+    "source": "seed",
+    "name": "UPA BARRA FUNDA"
+  },
+  "UPA PERDIZES": {
+    "lat": -23.544,
+    "lng": -46.674,
+    "source": "seed",
+    "name": "UPA PERDIZES"
+  },
+  "UPA POMPEIA": {
+    "lat": -23.5285,
+    "lng": -46.685,
+    "source": "seed",
+    "name": "UPA POMPEIA"
+  },
+  "UPA VILA LEOPOLDINA": {
+    "lat": -23.538,
+    "lng": -46.74,
+    "source": "seed",
+    "name": "UPA VILA LEOPOLDINA"
+  },
+  "UPA PINHEIROS": {
+    "lat": -23.564,
+    "lng": -46.69,
+    "source": "seed",
+    "name": "UPA PINHEIROS"
+  },
+  "UPA ITAIM BIBI": {
+    "lat": -23.586,
+    "lng": -46.677,
+    "source": "seed",
+    "name": "UPA ITAIM BIBI"
+  },
+  "UPA MOEMA": {
+    "lat": -23.599,
+    "lng": -46.661,
+    "source": "seed",
+    "name": "UPA MOEMA"
+  },
+  "UPA INDIANOPOLIS": {
+    "lat": -23.601,
+    "lng": -46.652,
+    "source": "seed",
+    "name": "UPA INDIANOPOLIS"
+  },
+  "UPA JARDINS": {
+    "lat": -23.576,
+    "lng": -46.661,
+    "source": "seed",
+    "name": "UPA JARDINS"
+  },
+  "UPA CONSOLACAO": {
+    "lat": -23.553,
+    "lng": -46.658,
+    "source": "seed",
+    "name": "UPA CONSOLACAO"
+  },
+  "UPA SE": {
+    "lat": -23.5505,
+    "lng": -46.6333,
+    "source": "seed",
+    "name": "UPA SE"
+  },
+  "UPA REPUBLICA": {
+    "lat": -23.5447,
+    "lng": -46.642,
+    "source": "seed",
+    "name": "UPA REPUBLICA"
+  },
+  "UPA BELA VISTA": {
+    "lat": -23.561,
+    "lng": -46.647,
+    "source": "seed",
+    "name": "UPA BELA VISTA"
+  },
+  "UPA LIBERDADE": {
+    "lat": -23.558,
+    "lng": -46.636,
+    "source": "seed",
+    "name": "UPA LIBERDADE"
+  },
+  "UPA CAMBUCI": {
+    "lat": -23.565,
+    "lng": -46.624,
+    "source": "seed",
+    "name": "UPA CAMBUCI"
+  },
+  "UPA MOOCA": {
+    "lat": -23.553,
+    "lng": -46.601,
+    "source": "seed",
+    "name": "UPA MOOCA"
+  },
+  "UPA BELEM": {
+    "lat": -23.541,
+    "lng": -46.601,
+    "source": "seed",
+    "name": "UPA BELEM"
+  },
+  "UPA BRAS": {
+    "lat": -23.543,
+    "lng": -46.619,
+    "source": "seed",
+    "name": "UPA BRAS"
+  },
+  "AMA JARDIM CAPELA": {
+    "lat": -23.7304405,
+    "lng": -46.7887565,
+    "source": "nominatim",
+    "name": "AMA JARDIM CAPELA"
+  },
+  "TESTE": {
+    "lat": -22.5625741,
+    "lng": -47.5493946,
+    "source": "nominatim",
+    "name": "TESTE"
+  },
+  "UPA DR. AUGUSTO GOMES DE MATTOS": {
+    "lat": -23.6420385,
+    "lng": -46.6042014,
+    "source": "nominatim",
+    "name": "UPA DR. AUGUSTO GOMES DE MATTOS"
+  },
+  "PA JARDIM MACEDONIA": {
+    "lat": -23.655197,
+    "lng": -46.7927093,
+    "source": "nominatim",
+    "name": "PA JARDIM MACEDONIA"
+  },
+  "AMA PARQUE FERNANDA": {
+    "lat": -23.6767146,
+    "lng": -46.7939672,
+    "source": "nominatim",
+    "name": "AMA PARQUE FERNANDA"
+  },
+  "HM AMPARO MATERNAL": {
+    "lat": -23.6000575,
+    "lng": -46.643394,
+    "source": "nominatim",
+    "name": "HM AMPARO MATERNAL"
+  },
+  "AMA CAPAO REDONDO": {
+    "lat": -23.6719026,
+    "lng": -46.7794354,
+    "source": "nominatim",
+    "name": "AMA CAPÃO REDONDO"
+  },
+  "HM INFANTIL MENINO JESUS": {
+    "lat": -23.5602067,
+    "lng": -46.647335,
+    "source": "nominatim",
+    "name": "HM INFANTIL MENINO JESUS"
+  },
+  "AMA PARQUE NOVO SANTO AMARO": {
+    "lat": -23.6988272,
+    "lng": -46.7830281,
+    "source": "nominatim",
+    "name": "AMA PARQUE NOVO SANTO AMARO"
+  },
+  "PSM BALNEARIO SAO JOSE": {
+    "lat": -23.7667847,
+    "lng": -46.7203258,
+    "source": "nominatim",
+    "name": "PSM BALNEARIO SÃO JOSE"
+  },
+  "HM DR. FERNANDO MAURO PIRES DA ROCHA": {
+    "lat": -23.8281,
+    "lng": -46.7274,
+    "source": "seed",
+    "name": "HM DR. FERNANDO MAURO PIRES DA ROCHA"
+  },
+  "UPA PARQUE DOROTEIA": {
+    "lat": -23.6889,
+    "lng": -46.6585,
+    "source": "seed",
+    "name": "UPA PARQUE DOROTEIA"
+  },
+  "UPA DONA MARIA ANTONIETA FERREIRA BARROS": {
+    "lat": -23.7062,
+    "lng": -46.776,
+    "source": "seed",
+    "name": "UPA DONA MARIA ANTONIETA FERREIRA BARROS"
+  }
+}

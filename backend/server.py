@@ -1232,15 +1232,54 @@ async def agent_tools():
 # ==============================================================
 # ANALYTICS
 @api.get("/analytics/kpis")
-async def analytics_kpis(fuel_cost: float = 5.89, km_per_liter: float = 10.0):
+async def analytics_kpis(fuel_cost: float = 5.89, km_per_liter: float = 10.0,
+                         start: str = "", end: str = "", unidade: str = ""):
     from mavis.skills import analytics as an
-    return an.kpis(fuel_cost, km_per_liter)
+    return an.kpis_filtered(start=start, end=end, unidade=unidade,
+                            fuel_cost_per_liter=fuel_cost, km_per_liter=km_per_liter)
 
 
 @api.get("/analytics/weekly")
-async def analytics_weekly(weeks: int = 12):
+async def analytics_weekly(weeks: int = 12, start: str = "", end: str = "", unidade: str = ""):
     from mavis.skills import analytics as an
-    return an.weekly_series(weeks)
+    return an.weekly_filtered(start=start, end=end, unidade=unidade, weeks=weeks)
+
+
+@api.get("/analytics/unidades")
+async def analytics_unidades():
+    from mavis.skills import analytics as an
+    return an.unidades_list()
+
+
+@api.get("/analytics/map-data")
+async def analytics_map_data(start: str = "", end: str = "", unidade: str = "",
+                             allow_remote: bool = True):
+    from mavis.skills import analytics as an
+    return an.map_data(start=start, end=end, unidade=unidade, allow_remote=allow_remote)
+
+
+@api.get("/analytics/export")
+async def analytics_export(format: str = "csv", start: str = "", end: str = "", unidade: str = "",
+                           fuel_cost: float = 5.89, km_per_liter: float = 10.0):
+    from mavis.skills import analytics as an
+    from mavis.skills import analytics_export as ex
+    rows = an.export_rows(start=start, end=end, unidade=unidade)
+    kpis = an.kpis_filtered(start=start, end=end, unidade=unidade,
+                            fuel_cost_per_liter=fuel_cost, km_per_liter=km_per_liter)
+    fmt = (format or "csv").lower()
+    ts = datetime.now().strftime("%Y%m%d_%H%M")
+    if fmt == "csv":
+        return Response(content=ex.to_csv(rows), media_type="text/csv; charset=utf-8",
+                        headers={"Content-Disposition": f'attachment; filename="mavis_analytics_{ts}.csv"'})
+    if fmt in ("xlsx", "excel"):
+        return Response(content=ex.to_xlsx(rows, kpis),
+                        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        headers={"Content-Disposition": f'attachment; filename="mavis_analytics_{ts}.xlsx"'})
+    if fmt == "pdf":
+        return Response(content=ex.to_pdf(rows, kpis, filtro={"start": start, "end": end, "unidade": unidade}),
+                        media_type="application/pdf",
+                        headers={"Content-Disposition": f'attachment; filename="mavis_analytics_{ts}.pdf"'})
+    raise HTTPException(400, "format inválido (use csv|xlsx|pdf)")
 
 
 @api.get("/analytics/monthly")
@@ -1262,9 +1301,9 @@ async def analytics_heatmap():
 
 
 @api.get("/analytics/activities")
-async def analytics_activities():
+async def analytics_activities(start: str = "", end: str = "", unidade: str = ""):
     from mavis.skills import analytics as an
-    return an.activity_distribution()
+    return an.activity_filtered(start=start, end=end, unidade=unidade)
 
 
 @api.get("/analytics/month/{month}")

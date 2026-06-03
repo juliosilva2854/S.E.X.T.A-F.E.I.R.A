@@ -117,6 +117,10 @@ SEED_COORDS: Dict[str, Tuple[float, float]] = {
     "UPA MOOCA": (-23.5530, -46.6010),
     "UPA BELEM": (-23.5410, -46.6010),
     "UPA BRAS": (-23.5430, -46.6190),
+    # Unidades específicas que o Nominatim não resolve (coords manuais aproximadas)
+    "HM DR. FERNANDO MAURO PIRES DA ROCHA": (-23.8281, -46.7274),  # Parelheiros
+    "UPA PARQUE DOROTEIA": (-23.6889, -46.6585),                   # Pedreira/Cidade Ademar
+    "UPA DONA MARIA ANTONIETA FERREIRA BARROS": (-23.7062, -46.7760),  # Jardim Ângela
 }
 
 
@@ -173,21 +177,47 @@ def _ensure_cache() -> Dict[str, Any]:
     return _MEM_CACHE
 
 
-def _remote_lookup(name: str) -> Optional[Tuple[float, float]]:
-    """Consulta Nominatim respeitando rate limit. Retorna None em falha."""
+# Prefixos de tipo de unidade — removidos para tentar geocodificar o bairro/logradouro
+_FACILITY_PREFIXES = [
+    "UPA", "AMA", "AMA/UBS", "UBS", "HM", "HMI", "HOSPITAL MUNICIPAL", "HOSPITAL",
+    "PA", "PS", "PSM", "PRONTO SOCORRO", "PRONTO-SOCORRO", "CAPS", "CER", "CEO",
+    "AME", "DR.", "DR", "DRA.", "DRA", "PROF.", "PROF",
+]
+
+
+def _bbox_sp() -> str:
+    # viewbox da Grande São Paulo (lon_esq, lat_topo, lon_dir, lat_baixo)
+    return "-46.95,-23.30,-46.30,-23.90"
+
+
+def _strip_facility(name: str) -> str:
+    """Remove prefixos de tipo de unidade para sobrar o bairro/identificador."""
+    s = _norm_key(name)
+    changed = True
+    while changed:
+        changed = False
+        for p in _FACILITY_PREFIXES:
+            if s.startswith(p + " "):
+                s = s[len(p):].strip()
+                changed = True
+    return s.strip()
+
+
+def _query_nominatim(query: str) -> Optional[Tuple[float, float]]:
     global _LAST_REMOTE_CALL
     elapsed = time.time() - _LAST_REMOTE_CALL
     if elapsed < RATE_LIMIT_SECONDS:
         time.sleep(RATE_LIMIT_SECONDS - elapsed)
     _LAST_REMOTE_CALL = time.time()
-
-    query = f"{name}, São Paulo, Brasil"
     try:
         resp = requests.get(
             NOMINATIM_URL,
-            params={"q": query, "format": "json", "limit": 1, "countrycodes": "br"},
+            params={
+                "q": query, "format": "json", "limit": 1, "countrycodes": "br",
+                "viewbox": _bbox_sp(), "bounded": 1,
+            },
             headers={"User-Agent": USER_AGENT},
-            timeout=4.0,
+            timeout=5.0,
         )
         if resp.status_code == 200:
             data = resp.json()
@@ -195,6 +225,21 @@ def _remote_lookup(name: str) -> Optional[Tuple[float, float]]:
                 return float(data[0]["lat"]), float(data[0]["lon"])
     except Exception:
         pass
+    return None
+
+
+def _remote_lookup(name: str) -> Optional[Tuple[float, float]]:
+    """Consulta Nominatim com múltiplas variações para maximizar acerto.
+    1) nome completo  2) sem prefixo de unidade (bairro)  3) bairro como 'suburb'."""
+    queries = [f"{name}, São Paulo, SP, Brasil"]
+    bairro = _strip_facility(name)
+    if bairro and bairro != _norm_key(name) and len(bairro) >= 3:
+        queries.append(f"{bairro}, São Paulo, SP, Brasil")
+        queries.append(f"bairro {bairro}, São Paulo, Brasil")
+    for q in queries:
+        coords = _query_nominatim(q)
+        if coords:
+            return coords
     return None
 
 
