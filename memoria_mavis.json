@@ -1,14 +1,6 @@
 [
     {
         "role": "Usuário",
-        "texto": "nossa senhora do negócio tava reativo aqui que susto"
-    },
-    {
-        "role": "Sexta-feira",
-        "texto": "Compreendo, senhor. Minhas respostas são sempre diretas e prontas para ajudar com as informações de rotas e distâncias que possuo.\n\nHá algo que eu possa consultar para o senhor neste momento?"
-    },
-    {
-        "role": "Usuário",
         "texto": "nossa parece um portal gente"
     },
     {
@@ -118,5 +110,13 @@
     {
         "role": "Sexta-feira",
         "texto": "Senhor, a distância de CASA para BOX é de 35 KM."
+    },
+    {
+        "role": "Usuário",
+        "texto": "Olá, está me ouvindo?"
+    },
+    {
+        "role": "Sexta-feira",
+        "texto": "Senhor, estou ouvindo e operacional. Em que posso auxiliá-lo?"
     }
 ]
