@@ -1,22 +1,52 @@
-# S.E.X.T.A - F.E.I.R.A (MAVIS) — Status
+# S.E.X.T.A - F.E.I.R.A (MAVIS) — Status / PRD
 
 ## Pedido do usuário
-"Apenas deixe funcionando perfeitamente e me ensine a acessar a página web. Não implemente novas funções, apenas faça funcionar."
+Assistente pessoal full-stack (React + FastAPI + MongoDB) de um técnico de campo de uma
+operadora de saúde (visita UPAs/AMAs/hospitais na Grande São Paulo).
+Tarefa atual: **Página de Analytics** com mapa de calor geográfico e exportação (CSV/Excel/PDF).
+Redesign premium (tema escuro + âmbar, estilo "terminal/control room"), garantindo que
+**todas as unidades** sempre apareçam no mapa.
 
 ## Stack
-- Backend: FastAPI (porta 8001) com Gemini 2.5 Flash, MongoDB, edge-tts, APScheduler
-- Frontend: React CRA (porta 3000), Tailwind, Framer Motion, Recharts
-- Banco: MongoDB local + arquivos JSON (rotas, relatórios, memórias)
+- Backend: FastAPI (porta 8001), MongoDB local, Gemini 2.5 Flash (chat — requer CHAVE_GEMINI), APScheduler, edge-tts
+- Frontend: React CRA (porta 3000), Tailwind, Recharts, **Leaflet + leaflet.heat** (vanilla, via callback ref), @phosphor-icons/react
+- Dados: arquivos JSON em /app (banco_de_dados.json = 267 rotas, banco_relatorios.json = 5 relatórios) + cache de geocoding
 
-## O que foi feito (03/06/2026)
-- Criado `backend/.env` (MONGO_URL, DB_NAME, CHAVE_GEMINI, GEMINI_MODEL, voz, FieldControl, WhatsApp)
-- Criado `frontend/.env` (REACT_APP_BACKEND_URL + DANGEROUSLY_DISABLE_HOST_CHECK + WDS_SOCKET_PORT)
-- `pip install -r backend/requirements.txt` OK
-- `yarn install` já estava feito
-- Supervisor: backend + frontend RUNNING
-- Validado: /api/health, /api/status (267 rotas, 30 memórias, 5 relatórios), /api/chat respondeu pelo Gemini
+## URL de acesso (preview)
+https://route-insights-5.preview.emergentagent.com  → página: /analytics
 
-## URL de acesso
-https://route-insights-5.preview.emergentagent.com
+## O que foi feito
 
-## Não pendente — sistema pronto pra uso
+### 03/06/2026 — Setup inicial
+- Criados backend/.env e frontend/.env; supervisor RUNNING; /api/health, /api/status, /api/chat validados.
+
+### 03/06/2026 — Analytics (Mapa de calor + Exportação) ✅ CONCLUÍDO E TESTADO
+- **Correções de ambiente (fork)**: recriados `backend/.env` e `frontend/.env` (perdidos no fork);
+  corrigido `pydantic-core` para **2.23.4** (estava 2.46.4, incompatível com pydantic 2.9.2);
+  instalado `tzlocal==5.2` + `pytz` (faltavam, quebravam o APScheduler). requirements.txt re-congelado.
+- **Backend** (`server.py`): novos endpoints `GET /api/analytics/{map-data, export, unidades}`;
+  `kpis`, `weekly`, `activities` agora aceitam filtros `start`/`end`/`unidade`.
+  `export?format=csv|xlsx|pdf` retorna arquivo com Content-Disposition.
+- **Geocoding** (`geocoding.py`): lookup remoto melhorado (múltiplas variações: nome completo →
+  bairro sem prefixo de unidade → "bairro X") + viewbox da Grande SP; seed manual para 3 unidades
+  que o Nominatim não resolve. **Resultado: 20/20 unidades geolocalizadas, 0 unresolved.**
+  Cache em `/app/geocode_cache.json` (totalmente populado; respeita rate-limit Nominatim).
+- **Frontend** (`Analytics.jsx`): reescrita completa seguindo `design_guidelines.json` —
+  header glass, painel de filtros, KPI cards, mapa de calor Leaflet (CARTO dark + heat âmbar + marcadores),
+  gráficos Recharts, heatmap por dia da semana, top destinos/equipamentos, botões de export, modal mensal.
+  Carga resiliente (Promise.allSettled) + mapa em fetch separado. `loadAll(override)`/`filterQS(extra, override)`
+  aceitam override explícito de filtros (correção de stale-closure no "Limpar").
+- **Testes**: 16/16 pytest backend (`/app/backend/tests/test_analytics.py`) + E2E frontend via testing agent
+  (iteration_3 e iteration_4). Bug do "Limpar" encontrado e corrigido (iteration_4: VERIFICADO, sem issues).
+
+## Observações importantes
+- **CHAVE_GEMINI está VAZIA** (perdida no fork). O Analytics NÃO precisa de LLM e funciona 100%.
+  O chat/IA só voltará quando o usuário fornecer a chave Gemini. Header mostra "OFFLINE" por isso.
+- **Restrições**: NÃO alterar `pydantic-core==2.23.4` nem `tzlocal/pytz`. Manter cache de geocoding.
+- react-leaflet@5 é incompatível com React 18 → usamos **Leaflet vanilla** diretamente (não react-leaflet).
+
+## Backlog / Próximos passos
+- P1: Pedir ao usuário a CHAVE_GEMINI para reativar o chat/IA.
+- P1: Execução em background (Docker Compose / serviço Windows / PWA / Electron).
+- P2: Refatorar `Analytics.jsx` (506 linhas) em subcomponentes (KpiGrid, HeatmapMap, FilterPanel, MonthlyChart).
+- P2: Persistir/seed mais coordenadas de unidades para reduzir dependência do Nominatim.
