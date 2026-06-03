@@ -1,0 +1,105 @@
+{
+  "theme": "dark",
+  "archetype": "Archetype 2: Tactical Command Center (Modified for Industrial Brutalism)",
+  "vibe": "Iron Man JARVIS / Terminal Cyberpunk / Brutalist Tech",
+  "colors": {
+    "background": "#0A0A0A",
+    "surface": "#121212",
+    "surface_hover": "#1A1A1A",
+    "primary": "#F59E0B",
+    "primary_hover": "#D97706",
+    "text_primary": "#FFFFFF",
+    "text_secondary": "#9CA3AF",
+    "text_muted": "#52525B",
+    "border": "#27272A",
+    "border_highlight": "#F59E0B",
+    "success": "#10B981",
+    "warning": "#F59E0B",
+    "error": "#EF4444"
+  },
+  "typography": {
+    "headings": {
+      "family": "Outfit",
+      "weights": ["300", "700"],
+      "usage": "Main dashboard titles, large metric numbers, system headers."
+    },
+    "body": {
+      "family": "JetBrains Mono",
+      "weights": ["400", "500", "700"],
+      "usage": "Logs, chat memory, route database, commands, terminal output, metrics."
+    }
+  },
+  "layout": {
+    "strategy": "Mode B: The 'Control Room' Grid",
+    "grid": "grid-cols-1 md:grid-cols-3 lg:grid-cols-4",
+    "gap": "gap-4",
+    "container_padding": "p-6",
+    "alignment": "Optical alignment, strictly left-aligned for data density and terminal feel."
+  },
+  "surfaces": {
+    "style": "Grid Borders & Retro-Futurism",
+    "border_radius": "rounded-none",
+    "borders": "1px solid #27272A",
+    "shadows": "none",
+    "glassmorphism": "forbidden, use solid dark backgrounds with hard borders only"
+  },
+  "motion": {
+    "hover": "Instant border color change to Amber (#F59E0B), slight bg lighten. No soft transitions to mimic immediate mechanical feedback.",
+    "status": "Blinking cursor for 'Listening' or 'Processing' state (animate-pulse).",
+    "logs": "New log entries appear instantly without slide animations to mimic true terminal speed."
+  },
+  "components": {
+    "real_time_status": {
+      "style": "Top bar, solid black (#0A0A0A), hard bottom border. Status tags like [ONLINE], [LISTENING] in monospace with respective colors and a blinking block cursor."
+    },
+    "chat_viewer": {
+      "style": "Log-style chat. NOT bubbly. Flat rectangular blocks or raw text lines. User: right-aligned or prefixed with 'USR >'. MAVIS: prefixed with 'SYS >' or 'MAVIS //' with amber border-left."
+    },
+    "route_database": {
+      "style": "Dense data table. border-collapse. Mono-spaced KM. Hover row highlight (bg-zinc-900). No rounded corners on the table wrapper."
+    },
+    "reports_gallery": {
+      "style": "Brutalist cards. No border-radius. Thick 1px borders. Accent colored action buttons (copy/download) with stark contrast."
+    },
+    "command_console": {
+      "style": "CLI-style input fixed at bottom or in a dedicated panel. Prefix 'MAVIS //' before input field. No border on the input itself, only on the wrapper."
+    },
+    "logs_stream": {
+      "style": "Pure terminal view. text-xs, JetBrains Mono. Color coded log levels (INFO, WARN, ERR). Auto-scroll to bottom. Deepest black background."
+    },
+    "routines_panel": {
+      "style": "Tactical grid of buttons. High contrast. 1px solid border. Hover states invert background to Amber and text to Black."
+    }
+  },
+  "icons": {
+    "library": "@phosphor-icons/react",
+    "style": "Duotone or Regular, sharp and technical."
+  },
+  "media": {
+    "image_urls": [
+      {
+        "url": "https://images.pexels.com/photos/26954237/pexels-photo-26954237.jpeg",
+        "category": "abstract_background",
+        "description": "Metallic honeycomb structure, use at very low opacity (5-10%) for empty states or login screen background to give an industrial tech feel."
+      },
+      {
+        "url": "https://images.pexels.com/photos/18337612/pexels-photo-18337612.jpeg",
+        "category": "cyber_accent",
+        "description": "Abstract digital landscape cyber grid, use inside the 'AI processing' visualizer or status card when MAVIS is actively thinking or generating a report."
+      }
+    ]
+  },
+  "accessibility": {
+    "contrast": "Ensure pure white text on #0A0A0A passes APCA. Use Text Shadow if overlaid on imagery.",
+    "focus": "focus:ring-1 focus:ring-amber-500 focus:outline-none",
+    "testing": "All interactive and key informational elements MUST include a data-testid attribute in kebab-case (e.g., data-testid='command-console-input')."
+  },
+  "instructions_to_main_agent": [
+    "Implement pure dark mode (no light mode toggle required as this is a command center).",
+    "Use JetBrains Mono for all data, tables, inputs, and logs. Use Outfit ONLY for large titles and prominent metrics.",
+    "Do NOT use standard rounded cards. Override Shadcn Card defaults to rounded-none and explicit 1px borders (#27272A).",
+    "The UI must feel like an industrial control panel or terminal. Prioritize data density and high contrast over white space.",
+    "Do not use generic blue gradients, teal, or purple. Stick strictly to the Obsidian, White, and Amber/Orange palette.",
+    "Implement the Chat Memory not as WhatsApp bubbles, but as terminal system logs or flat brutalist rectangles."
+  ]
+}
