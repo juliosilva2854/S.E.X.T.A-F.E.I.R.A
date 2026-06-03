@@ -9,3 +9,10 @@ credenciais.json
 
 # Banco de Dados de Relatórios e Logs
 __pycache__/
+.env
+.env.*
+*.env
+credentials.json
+*.pem
+*.key
+.credentials
