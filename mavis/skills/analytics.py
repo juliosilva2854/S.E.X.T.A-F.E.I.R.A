@@ -365,6 +365,225 @@ def activity_distribution() -> List[Dict[str, Any]]:
     return [{"tipo": labels.get(k, k), "qtd": v} for k, v in counter.most_common()]
 
 
+# ==============================================================
+# FILTROS + MAP DATA + EXPORT
+# ==============================================================
+def _parse_iso_or_br(s: str) -> datetime:
+    """Aceita 'YYYY-MM-DD' ou 'DD/MM/YYYY'."""
+    if not s:
+        return None  # type: ignore
+    s = s.strip()
+    for fmt in ("%Y-%m-%d", "%d/%m/%Y"):
+        try:
+            return datetime.strptime(s, fmt)
+        except Exception:
+            continue
+    return None  # type: ignore
+
+
+def filtered_days(start: str = "", end: str = "", unidade: str = "") -> List[Dict[str, Any]]:
+    """Retorna a lista de dias (achatada) filtrada por intervalo e unidade.
+    - start/end: 'YYYY-MM-DD' ou 'DD/MM/YYYY'
+    - unidade: substring (normalizada) que deve aparecer em qualquer location do dia.
+    """
+    parsed = parse_all()
+    days = _flat_days(parsed)
+    dt_start = _parse_iso_or_br(start) if start else None
+    dt_end = _parse_iso_or_br(end) if end else None
+    unorm = _normalize(unidade) if unidade else ""
+
+    out = []
+    for d in days:
+        dt = _to_date(d["date"])
+        if dt_start and dt < dt_start:
+            continue
+        if dt_end and dt > dt_end:
+            continue
+        if unorm:
+            locs_norm = [_normalize(l) for l in d.get("locations", [])]
+            if not any(unorm in ln for ln in locs_norm):
+                continue
+        out.append(d)
+    return out
+
+
+def unidades_list() -> List[str]:
+    """Lista única de unidades que JÁ apareceram nos relatórios (não só no banco)."""
+    parsed = parse_all()
+    days = _flat_days(parsed)
+    seen = Counter()
+    for d in days:
+        for loc in d.get("locations", []):
+            seen[loc] += 1
+    return [u for u, _ in seen.most_common()]
+
+
+def kpis_filtered(
+    start: str = "", end: str = "", unidade: str = "",
+    fuel_cost_per_liter: float = 5.89, km_per_liter: float = 10.0,
+) -> Dict[str, Any]:
+    """Mesmo formato de kpis() porém aplicando filtros."""
+    days = filtered_days(start, end, unidade)
+    total_km = sum(d["km"] for d in days)
+    total_atendimentos = 0
+    total_preventivas = 0
+    total_entregas = 0
+    total_trocas = 0
+    eq_counter = Counter()
+    loc_counter = Counter()
+    for d in days:
+        a = d.get("activities", {})
+        total_atendimentos += a.get("atendimento_tecnico", 0)
+        total_preventivas += a.get("manutencao_preventiva", 0)
+        total_entregas += a.get("entrega_insumos", 0)
+        total_trocas += a.get("troca_equipamento", 0)
+        for k, v in (d.get("equipments") or {}).items():
+            eq_counter[k] += v
+        for loc in d.get("locations", []):
+            loc_counter[loc] += 1
+
+    dias_trabalhados = len(days)
+    semanas = len({_week_key(_to_date(d["date"])) for d in days})
+    meses = len({_month_key(_to_date(d["date"])) for d in days})
+    media_km_dia = round(total_km / dias_trabalhados, 1) if dias_trabalhados else 0
+    media_km_semana = round(total_km / semanas, 1) if semanas else 0
+    litros = total_km / km_per_liter if km_per_liter > 0 else 0
+    custo_combustivel = litros * fuel_cost_per_liter
+
+    return {
+        "total_km": round(total_km, 1),
+        "total_dias": dias_trabalhados,
+        "total_semanas": semanas,
+        "total_meses": meses,
+        "media_km_dia": media_km_dia,
+        "media_km_semana": media_km_semana,
+        "total_atendimentos": total_atendimentos,
+        "total_preventivas": total_preventivas,
+        "total_entregas_insumos": total_entregas,
+        "total_trocas_equipamentos": total_trocas,
+        "litros_estimados": round(litros, 1),
+        "custo_combustivel": round(custo_combustivel, 2),
+        "fuel_cost_per_liter": fuel_cost_per_liter,
+        "km_per_liter": km_per_liter,
+        "top_destinos": [{"unidade": u, "visitas": c} for u, c in loc_counter.most_common(10)],
+        "top_equipamentos": [{"item": e, "qtd": c} for e, c in eq_counter.most_common(8)],
+        "ultimo_dia": days[-1]["date"] if days else None,
+        "primeiro_dia": days[0]["date"] if days else None,
+        "filtro": {"start": start, "end": end, "unidade": unidade},
+    }
+
+
+def weekly_filtered(start: str = "", end: str = "", unidade: str = "", weeks: int = 12) -> List[Dict[str, Any]]:
+    days = filtered_days(start, end, unidade)
+    by_week: Dict[str, Dict[str, Any]] = defaultdict(lambda: {"km": 0.0, "visitas": 0, "dias_uteis": 0,
+                                                              "preventivas": 0, "atendimentos": 0})
+    for d in days:
+        wk = _week_key(_to_date(d["date"]))
+        by_week[wk]["km"] += d["km"]
+        by_week[wk]["visitas"] += len(d.get("locations", []))
+        by_week[wk]["dias_uteis"] += 1
+        a = d.get("activities", {})
+        by_week[wk]["preventivas"] += a.get("manutencao_preventiva", 0)
+        by_week[wk]["atendimentos"] += a.get("atendimento_tecnico", 0)
+    out = sorted(by_week.items(), key=lambda x: x[0])[-weeks:]
+    return [{"semana": k, **{kk: round(v, 1) if isinstance(v, float) else v for kk, v in val.items()}}
+            for k, val in out]
+
+
+def activity_filtered(start: str = "", end: str = "", unidade: str = "") -> List[Dict[str, Any]]:
+    days = filtered_days(start, end, unidade)
+    counter = Counter()
+    for d in days:
+        for k, v in d.get("activities", {}).items():
+            counter[k] += v
+    labels = {
+        "manutencao_preventiva": "Manutenções preventivas",
+        "atendimento_tecnico": "Atendimentos técnicos",
+        "entrega_insumos": "Entregas de insumos",
+        "troca_equipamento": "Trocas / substituições",
+        "configuracao": "Configurações / Zabbix",
+    }
+    return [{"tipo": labels.get(k, k), "qtd": v} for k, v in counter.most_common()]
+
+
+def map_data(start: str = "", end: str = "", unidade: str = "", allow_remote: bool = True) -> Dict[str, Any]:
+    """Retorna dados para o mapa de calor geográfico.
+
+    Estrutura:
+      {
+        "center": [lat, lng],
+        "points": [{"lat": .., "lng": .., "weight": .., "unidade": .., "visitas": ..,
+                    "km_total": ..}, ...],
+        "unresolved": ["UPA X NAO ACHADA", ...],
+        "total_visitas": int,
+        "total_unidades": int
+      }
+    """
+    from mavis.skills import geocoding as geo
+    days = filtered_days(start, end, unidade)
+
+    loc_counter: Counter = Counter()
+    loc_km: Dict[str, float] = defaultdict(float)
+    for d in days:
+        locs = d.get("locations", [])
+        if not locs:
+            continue
+        # Distribui o KM do dia igualmente entre as unidades visitadas no dia
+        share = d["km"] / len(locs) if locs else 0.0
+        for loc in locs:
+            loc_counter[loc] += 1
+            loc_km[loc] += share
+
+    points = []
+    unresolved = []
+    max_visits = max(loc_counter.values()) if loc_counter else 1
+    for loc, visitas in loc_counter.most_common():
+        coords = geo.geocode(loc, allow_remote=allow_remote)
+        if coords is None:
+            unresolved.append(loc)
+            continue
+        lat, lng = coords
+        points.append({
+            "lat": lat,
+            "lng": lng,
+            "weight": round(visitas / max_visits, 4),
+            "unidade": loc,
+            "visitas": visitas,
+            "km_total": round(loc_km[loc], 1),
+        })
+
+    return {
+        "center": list(geo.get_center()),
+        "points": points,
+        "unresolved": unresolved,
+        "total_visitas": sum(loc_counter.values()),
+        "total_unidades": len(loc_counter),
+        "filtro": {"start": start, "end": end, "unidade": unidade},
+    }
+
+
+def export_rows(start: str = "", end: str = "", unidade: str = "") -> List[Dict[str, Any]]:
+    """Linhas tabulares prontas para exportação."""
+    days = filtered_days(start, end, unidade)
+    rows = []
+    for d in days:
+        a = d.get("activities", {})
+        e = d.get("equipments", {})
+        rows.append({
+            "data": d["date"],
+            "km": d["km"],
+            "visitas": len(d.get("locations", [])),
+            "unidades": " → ".join(d.get("locations", [])),
+            "preventivas": a.get("manutencao_preventiva", 0),
+            "atendimentos": a.get("atendimento_tecnico", 0),
+            "entregas_insumos": a.get("entrega_insumos", 0),
+            "trocas": a.get("troca_equipamento", 0),
+            "configuracoes": a.get("configuracao", 0),
+            "equipamentos": ", ".join(f"{k}:{v}" for k, v in e.items()) if e else "",
+        })
+    return rows
+
+
 def month_detail(month_str: str) -> Dict[str, Any]:
     """Detalhe de um mês específico (YYYY-MM)."""
     parsed = parse_all()

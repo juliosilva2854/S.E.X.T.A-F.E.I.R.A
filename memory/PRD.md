@@ -17,6 +17,6 @@
 - Validado: /api/health, /api/status (267 rotas, 30 memórias, 5 relatórios), /api/chat respondeu pelo Gemini
 
 ## URL de acesso
-https://ai-assistant-hub-472.preview.emergentagent.com
+https://route-insights-5.preview.emergentagent.com
 
 ## Não pendente — sistema pronto pra uso
