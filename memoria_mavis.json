@@ -5,7 +5,7 @@
     },
     {
         "role": "Sexta-feira",
-        "texto": "Senhor, eu não possuo dados para gerar relatórios semanais ou qualquer outra informação baseada em períodos de tempo. Minhas informações se restringem às distâncias das rotas entre as localidades armazenadas no meu sistema.\n\nPosso ajudar com alguma consulta sobre as rotas ou distâncias disponíveis? [ESPERAR]"
+        "texto": "Senhor, eu não possuo dados para gerar relatórios semanais ou qualquer outra informação baseada em períodos de tempo. Minhas informações se restringem às distâncias das rotas entre as localidades armazenadas no meu sistema.\n\nPosso ajudar com alguma consulta sobre as rotas ou distâncias disponíveis?"
     },
     {
         "role": "Usuário",
@@ -13,7 +13,7 @@
     },
     {
         "role": "Sexta-feira",
-        "texto": "Compreendo, senhor. Minhas respostas são sempre diretas e prontas para ajudar com as informações de rotas e distâncias que possuo.\n\nHá algo que eu possa consultar para o senhor neste momento? [ESPERAR]"
+        "texto": "Compreendo, senhor. Minhas respostas são sempre diretas e prontas para ajudar com as informações de rotas e distâncias que possuo.\n\nHá algo que eu possa consultar para o senhor neste momento?"
     },
     {
         "role": "Usuário",
@@ -21,7 +21,7 @@
     },
     {
         "role": "Sexta-feira",
-        "texto": "Entendido, senhor. Eu sou um sistema de consulta de rotas e distâncias.\n\nPosso ajudar com alguma informação sobre as rotas disponíveis no meu sistema? [ESPERAR]"
+        "texto": "Entendido, senhor. Eu sou um sistema de consulta de rotas e distâncias.\n\nPosso ajudar com alguma informação sobre as rotas disponíveis no meu sistema?"
     },
     {
         "role": "Usuário",
@@ -29,7 +29,7 @@
     },
     {
         "role": "Sexta-feira",
-        "texto": "Sim, senhor. Eu estou em pleno funcionamento para consultar as rotas e distâncias que tenho no sistema.\n\nO senhor gostaria de fazer alguma consulta sobre as rotas disponíveis? [ESPERAR]"
+        "texto": "Sim, senhor. Eu estou em pleno funcionamento para consultar as rotas e distâncias que tenho no sistema.\n\nO senhor gostaria de fazer alguma consulta sobre as rotas disponíveis?"
     },
     {
         "role": "Usuário",
@@ -37,7 +37,7 @@
     },
     {
         "role": "Sexta-feira",
-        "texto": "Senhor, como mencionei anteriormente, eu não consigo gerar relatórios semanais ou baseados em qualquer período de tempo. Minhas informações são fixas e se limitam às rotas e distâncias armazenadas.\n\nPosso ajudar com alguma consulta sobre as rotas ou distâncias que tenho no meu sistema? [ESPERAR]"
+        "texto": "Senhor, como mencionei anteriormente, eu não consigo gerar relatórios semanais ou baseados em qualquer período de tempo. Minhas informações são fixas e se limitam às rotas e distâncias armazenadas.\n\nPosso ajudar com alguma consulta sobre as rotas ou distâncias que tenho no meu sistema?"
     },
     {
         "role": "Usuário",
@@ -45,7 +45,7 @@
     },
     {
         "role": "Sexta-feira",
-        "texto": "Senhor, eu não possuo a capacidade de criar relatórios semanais ou de qualquer período. Minhas funções são restritas à consulta das rotas e distâncias que estão armazenadas no meu banco de dados.\n\nO senhor gostaria de consultar alguma rota ou distância específica que esteja no meu sistema? [ESPERAR]"
+        "texto": "Senhor, eu não possuo a capacidade de criar relatórios semanais ou de qualquer período. Minhas funções são restritas à consulta das rotas e distâncias que estão armazenadas no meu banco de dados.\n\nO senhor gostaria de consultar alguma rota ou distância específica que esteja no meu sistema?"
     },
     {
         "role": "Usuário",
