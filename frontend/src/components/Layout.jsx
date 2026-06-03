@@ -20,11 +20,13 @@ import {
   Lightning as Bolt,
   Timer,
   CurrencyDollar,
+  ChartBar,
 } from "@phosphor-icons/react";
 import { api } from "../api";
 
 const NAV = [
   { to: "/", label: "Overview", icon: Terminal, end: true },
+  { to: "/analytics", label: "Analytics", icon: ChartBar },
   { to: "/chat", label: "Chat Neural", icon: ChatCircle },
   { to: "/code", label: "Code Lab", icon: Code },
   { to: "/document", label: "Document Tools", icon: Translate },

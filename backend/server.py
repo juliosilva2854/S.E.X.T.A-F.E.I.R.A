@@ -1085,6 +1085,62 @@ async def kb_ask(body: KbAsk):
 
 
 # ==============================================================
+# ANALYTICS (Dashboard de KM, relatórios, atividades)
+# ==============================================================
+@api.get("/analytics/kpis")
+async def analytics_kpis(fuel_cost: float = 5.89, km_per_liter: float = 12.0):
+    from mavis.skills import analytics as an
+    return an.kpis(fuel_cost, km_per_liter)
+
+
+@api.get("/analytics/weekly")
+async def analytics_weekly(weeks: int = 12):
+    from mavis.skills import analytics as an
+    return an.weekly_series(weeks)
+
+
+@api.get("/analytics/monthly")
+async def analytics_monthly(months: int = 12):
+    from mavis.skills import analytics as an
+    return an.monthly_series(months)
+
+
+@api.get("/analytics/daily")
+async def analytics_daily(days: int = 60):
+    from mavis.skills import analytics as an
+    return an.daily_series(days)
+
+
+@api.get("/analytics/heatmap")
+async def analytics_heatmap():
+    from mavis.skills import analytics as an
+    return an.heatmap_weekday()
+
+
+@api.get("/analytics/activities")
+async def analytics_activities():
+    from mavis.skills import analytics as an
+    return an.activity_distribution()
+
+
+@api.get("/analytics/month/{month}")
+async def analytics_month_detail(month: str):
+    """month no formato YYYY-MM"""
+    from mavis.skills import analytics as an
+    out = an.month_detail(month)
+    if "error" in out:
+        raise HTTPException(404, out["error"])
+    return out
+
+
+@api.get("/analytics/parse-all")
+async def analytics_parse_all():
+    """Retorna todos os relatórios parseados (útil para debug)."""
+    from mavis.skills import analytics as an
+    return an.parse_all()
+
+
+# ==============================================================
 # COMANDOS (legacy + chat)
 # ==============================================================
 @api.post("/commands/execute")

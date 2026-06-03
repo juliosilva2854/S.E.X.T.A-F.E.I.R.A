@@ -21,6 +21,7 @@ import Finance from "./pages/Finance";
 import Productivity from "./pages/Productivity";
 import Knowledge from "./pages/Knowledge";
 import Workflows from "./pages/Workflows";
+import Analytics from "./pages/Analytics";
 
 export default function App() {
   return (
@@ -41,6 +42,7 @@ export default function App() {
       <Routes>
         <Route element={<Layout />}>
           <Route path="/" element={<Overview />} />
+          <Route path="/analytics" element={<Analytics />} />
           <Route path="/chat" element={<Chat />} />
           <Route path="/code" element={<CodeLab />} />
           <Route path="/document" element={<DocumentTools />} />

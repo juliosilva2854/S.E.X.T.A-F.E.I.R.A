@@ -111,7 +111,34 @@ mavis/
 ### Desktop (`/app/sexta-feira.py`)
 Loop voz: STT → router.match_intent → execute_skill_local OU brain.chat_text → TTS → fala. Modo proativo background, re-agenda lembretes pendentes no startup, mantém compat com rotinas.py legacy.
 
-## Implementado nesta sessão (v4.0, 2026-06-03)
+## Implementado nesta sessão (v4.1 - Analytics, 2026-06-03)
+- **`mavis/skills/analytics.py`** — Parser inteligente sem custo LLM:
+  - Detecta unidades visitadas por matching contra banco_de_dados.json (267 rotas → ~80 unidades únicas)
+  - Anti-substring (UPA VILA MARIANA não duplica com VILA MARIANA)
+  - Normalização de acentos (PA JARDIM MACEDÔNIA = PA JARDIM MACEDONIA)
+  - Calcula KM diário encadeando CASA → loc1 → loc2 → ... → CASA via routes_km
+  - Conta atividades por keywords (manutenção preventiva, atendimento técnico, entrega de insumos, troca, configuração)
+  - Conta equipamentos (manguito, Trius, totem, teclado, glicosímetro, fonte, P.A, oxímetro, termômetro, impressora, bomba, fechadura, cabo)
+- **8 endpoints** `/api/analytics/*`: kpis, weekly, monthly, daily, heatmap, activities, month/{YYYY-MM} (detalhe), parse-all
+- **Página `/analytics`** com recharts:
+  - 10 KPI cards (Total KM, Dias úteis, Médias dia/semana, Litros, R$ combustível, Preventivas/Atendimentos/Entregas/Trocas)
+  - Bar chart KM por semana (12 semanas)
+  - Pie chart Tipos de atividade
+  - Bar chart KM por mês + Cards mensais clicáveis (com modal de detalhe)
+  - Mapa de calor por dia da semana
+  - Top 10 Destinos + Top 8 Equipamentos
+  - Line chart KM diário (30 dias)
+  - Modal de detalhe mensal: KPIs do mês + top unidades + equipamentos + rota detalhada de cada dia
+  - Configuradores: R$/L e km/L (cálculo de custo combustível dinâmico)
+- Dependência nova: `recharts` (gráficos React)
+
+## Resultados sobre dados reais (4 relatórios → 20 dias úteis)
+- 1556 km totais
+- 77.8 km/dia médio · 389 km/semana
+- R$ 763.74 em combustível estimado (5.89/L, 12 km/L)
+- 40 manutenções preventivas, 22 atendimentos, 7 entregas, 18 trocas
+- Top destino: UPA SANTO AMARO (5×)
+- Top equipamento trocado: Manguito (11×)
 - 8 novos módulos em `mavis/skills/`
 - ~30 endpoints novos no backend
 - 7 páginas novas no frontend (sidebar agora com 19 itens)
