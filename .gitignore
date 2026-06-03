@@ -1,18 +1,26 @@
-# Ambientes Virtuais
-venv/
-env/
-.venv/
-
-# Ficheiros de Segurança e Senhas (NUNCA SUBIR)
-config.py
+# Arquivos sensíveis
 credenciais.json
-
-# Banco de Dados de Relatórios e Logs
-__pycache__/
 .env
-.env.*
 *.env
-credentials.json
-*.pem
-*.key
-.credentials
+backend/.env
+frontend/.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.mp3
+resposta.mp3
+
+# Sessões locais
+sessao_whatsapp/Default/Cache/
+sessao_whatsapp/Default/Code Cache/
+sessao_whatsapp/Default/Service Worker/
+sessao_whatsapp/Default/IndexedDB/
+sessao_whatsapp/Default/Session Storage/
+sessao_whatsapp/Default/Local Storage/
+
+# Node
+node_modules/
+build/
+.next/

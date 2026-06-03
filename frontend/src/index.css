@@ -1,0 +1,119 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body,
+#root {
+  height: 100%;
+  background-color: #0a0a0a;
+  color: #ffffff;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+}
+
+::selection {
+  background: #f59e0b;
+  color: #0a0a0a;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #0a0a0a;
+}
+::-webkit-scrollbar-thumb {
+  background: #27272a;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #f59e0b;
+}
+
+/* Cursor piscante estilo terminal */
+.blink-caret::after {
+  content: "▍";
+  color: #f59e0b;
+  animation: blink 1s steps(2) infinite;
+  margin-left: 4px;
+}
+
+/* Grid texture */
+.grid-bg {
+  background-image:
+    linear-gradient(rgba(245, 158, 11, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(245, 158, 11, 0.04) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+.noise::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.04;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.6'/></svg>");
+}
+
+/* Scanline */
+.scanline {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.scanline::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    rgba(245, 158, 11, 0.18),
+    transparent
+  );
+  animation: scan 4s linear infinite;
+}
+
+.btn-amber {
+  background: #f59e0b;
+  color: #0a0a0a;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 0.55rem 1rem;
+  border: 1px solid #f59e0b;
+}
+.btn-amber:hover {
+  background: #d97706;
+  border-color: #d97706;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: #f59e0b;
+  border: 1px solid #27272a;
+  padding: 0.5rem 0.85rem;
+  font-weight: 500;
+}
+.btn-ghost:hover {
+  border-color: #f59e0b;
+  background: #121212;
+}
+
+.panel {
+  background: #121212;
+  border: 1px solid #27272a;
+}
+.panel-header {
+  border-bottom: 1px solid #27272a;
+  padding: 0.6rem 0.9rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #9ca3af;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}

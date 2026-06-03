@@ -1,21 +1,19 @@
 # ==========================================
-# MAVIS - ARQUIVO DE CONFIGURAÇÃO GERAL
+# MAVIS - Template de configuração
+# (preencha localmente; em produção use backend/.env)
 # ==========================================
+CHAVE_GEMINI = ""
 
-# Credenciais
-CHAVE_GEMINI = "" 
+VOZ_SINTETIZADOR = "pt-BR-ThalitaNeural"
 
-# Configurações de Voz (Voz Neural Feminina Premium)
-VOZ_SINTETIZADOR = "pt-BR-ThalitaNeural" 
-
-# Configurações de Sistema
 NOME_IA = "Sexta-feira"
-ARQUIVO_MEMORIA = ""
-ARQUIVO_DB = ""
+ARQUIVO_MEMORIA = "memoria_mavis.json"
+ARQUIVO_DB = "banco_de_dados.json"
 
-# Nível de silêncio para o microfone cortar (1.0 = Ágil, 2.0 = Mais paciente)
 PAUSE_THRESHOLD = 1.0
 
-# CREDENCIAIS DO ROBÔ NAVEGADOR (FIELDCONTROL)
 FIELDCONTROL_EMAIL = ""
 FIELDCONTROL_SENHA = ""
+
+WHATSAPP_NUMERO = ""
+WHATSAPP_GRUPO = ""

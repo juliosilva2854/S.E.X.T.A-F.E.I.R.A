@@ -1,17 +1,5 @@
 [
     {
-        "role": "Sexta-feira",
-        "texto": "Senhor, para que eu possa entender melhor, o que o senhor gostaria de preencher? Minhas funções são de consulta de informações sobre rotas e distâncias, não consigo preencher ou criar novos dados. [ESPERAR]"
-    },
-    {
-        "role": "Usuário",
-        "texto": "aprender plan"
-    },
-    {
-        "role": "Sexta-feira",
-        "texto": "Senhor, eu não tenho a capacidade de aprender ou processar planilhas. Minhas funções são limitadas a consultar as informações de rotas e distâncias que já estão armazenadas no meu sistema.\n\nO senhor gostaria de fazer alguma consulta sobre as rotas disponíveis? [ESPERAR]"
-    },
-    {
         "role": "Usuário",
         "texto": "tirar relatório desta semana"
     },
@@ -58,5 +46,77 @@
     {
         "role": "Sexta-feira",
         "texto": "Senhor, eu não possuo a capacidade de criar relatórios semanais ou de qualquer período. Minhas funções são restritas à consulta das rotas e distâncias que estão armazenadas no meu banco de dados.\n\nO senhor gostaria de consultar alguma rota ou distância específica que esteja no meu sistema? [ESPERAR]"
+    },
+    {
+        "role": "Usuário",
+        "texto": "qual a distancia de casa para box?"
+    },
+    {
+        "role": "Sexta-feira",
+        "texto": "Senhor, a distância de CASA para BOX é de 35 KM."
+    },
+    {
+        "role": "Usuário",
+        "texto": "qual a distancia de casa para box?"
+    },
+    {
+        "role": "Sexta-feira",
+        "texto": "Senhor, a distância de CASA para BOX é de 35 KM."
+    },
+    {
+        "role": "Usuário",
+        "texto": "qual a distancia de casa pra box?"
+    },
+    {
+        "role": "Sexta-feira",
+        "texto": "Senhor, a distância de CASA para BOX é de 35 KM."
+    },
+    {
+        "role": "Usuário",
+        "texto": "olá, tudo bem?"
+    },
+    {
+        "role": "Sexta-feira",
+        "texto": "Senhor, estou operacional. Em que posso auxiliá-lo?"
+    },
+    {
+        "role": "Usuário",
+        "texto": "qual a distancia entre upa pedreira e casa?"
+    },
+    {
+        "role": "Sexta-feira",
+        "texto": "Senhor, a distância de UPA PEDREIRA para CASA é de 25 KM."
+    },
+    {
+        "role": "Usuário",
+        "texto": "qual a distancia de casa pra box?"
+    },
+    {
+        "role": "Sexta-feira",
+        "texto": "Senhor, a distância de CASA para BOX é de 35 KM."
+    },
+    {
+        "role": "Usuário",
+        "texto": "olá, tudo bem?"
+    },
+    {
+        "role": "Sexta-feira",
+        "texto": "Senhor, estou operacional. Em que posso auxiliá-lo?"
+    },
+    {
+        "role": "Usuário",
+        "texto": "qual a distancia entre upa pedreira e casa?"
+    },
+    {
+        "role": "Sexta-feira",
+        "texto": "Senhor, a distância de UPA PEDREIRA para CASA é de 25 KM."
+    },
+    {
+        "role": "Usuário",
+        "texto": "teste do painel: distancia upa pedreira para casa?"
+    },
+    {
+        "role": "Sexta-feira",
+        "texto": "Senhor, a distância de UPA PEDREIRA para CASA é de 25 KM."
     }
 ]
