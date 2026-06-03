@@ -13,12 +13,26 @@ import {
   Clock,
   GoogleLogo,
   Lightbulb,
+  Code,
+  Translate,
+  MagnifyingGlass,
+  BookOpen,
+  Lightning as Bolt,
+  Timer,
+  CurrencyDollar,
 } from "@phosphor-icons/react";
 import { api } from "../api";
 
 const NAV = [
   { to: "/", label: "Overview", icon: Terminal, end: true },
   { to: "/chat", label: "Chat Neural", icon: ChatCircle },
+  { to: "/code", label: "Code Lab", icon: Code },
+  { to: "/document", label: "Document Tools", icon: Translate },
+  { to: "/research", label: "Research", icon: MagnifyingGlass },
+  { to: "/knowledge", label: "Knowledge Base", icon: BookOpen },
+  { to: "/workflows", label: "Workflows", icon: Bolt },
+  { to: "/productivity", label: "Productivity", icon: Timer },
+  { to: "/finance", label: "Finance", icon: CurrencyDollar },
   { to: "/vision", label: "Visão", icon: Eye },
   { to: "/routes", label: "Banco de Rotas", icon: MapPinLine },
   { to: "/reports", label: "Relatórios", icon: FileText },

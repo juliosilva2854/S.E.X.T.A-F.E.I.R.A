@@ -1,113 +1,140 @@
-# S.E.X.T.A - F.E.I.R.A (MAVIS) — Personal AI Assistant
+# S.E.X.T.A - F.E.I.R.A (MAVIS) — Personal AI Assistant v4.0
 
-## Problema Original
-Sistema de IA pessoal em Python já existente (J.A.R.V.I.S.-like) com voz neural, reconhecimento de voz Vosk, integração WhatsApp Web, RPA FieldControl/Playwright, Google Sheets, banco de rotas KM.
+## Visão Geral
+IA pessoal multifacetada operada via voz (desktop) e painel web. Evolução em 4 fases:
+- v1: codebase original (Python desktop com Vosk + Gemini + Edge TTS + Playwright FieldControl/WhatsApp + Sheets)
+- v2: Painel Web FastAPI + React (chat, rotas, relatórios, memória, vozes)
+- v3: IA Agentic (multimodal vision, Google ecosystem completo, memória longa, lembretes, scheduler, modo proativo, wake word, 3 personalidades, smart_extract, sistema info)
+- **v4 (atual): Hub de Produtividade Completa** — Code Lab, Document Tools, Research/Dossier, Workflows automatizados, Knowledge Base com RAG, Productivity (Pomodoro/Notes/Todos), Finance (cotações + calculadora)
 
-Pedido evoluiu em 3 fases:
-- v2.0: análise completa + Painel Web + correção de bugs
-- v3.0: IA "extremamente avançada" — manipulação do computador, leitura de tela, ecossistema Google completo, WhatsApp bidirecional, conversa estável, lembretes, modo proativo, vision computacional, wake word, personalidade configurável
+## Arquitetura
 
-## Arquitetura Final (v3.0)
+### Pacote `/app/mavis/` (compartilhado desktop + web)
+```
+mavis/
+├── core/
+│   ├── brain.py            # Gemini 2.5-flash + multimodal + smart_extract + personalidades
+│   ├── long_memory.py      # Fatos persistentes do operador
+│   ├── reminders.py        # Lembretes
+│   ├── router.py           # Intent matching (40+ regex)
+│   ├── storage.py          # Escrita atômica
+│   └── paths.py
+└── skills/
+    ├── computer.py         # PyAutoGUI (desktop)
+    ├── vision.py           # mss + Gemini Vision
+    ├── system_info.py      # psutil
+    ├── google_auth.py      # OAuth2 shared
+    ├── google_calendar.py
+    ├── google_gmail.py
+    ├── google_drive.py
+    ├── whatsapp.py         # Playwright (desktop)
+    ├── scheduler.py        # APScheduler
+    ├── proactive.py        # Loop proativo
+    ├── wake_word.py        # openWakeWord (desktop)
+    ├── news_weather.py     # RSS + Open-Meteo
+    ├── code_assistant.py   # Gerar/explicar/revisar/refatorar/converter/debug código
+    ├── python_sandbox.py   # Executor Python isolado (subprocess + bloqueia subprocess/socket/ctypes/shutil)
+    ├── document_tools.py   # Resumir/traduzir/reescrever/sentimento/email
+    ├── research.py         # Dossier multi-step (subqueries → web → síntese)
+    ├── finance.py          # Forex (awesomeapi) + Crypto (CoinGecko) + Loan/Compound calculator
+    ├── productivity.py     # Quick Notes + Todos + Pomodoro log
+    ├── workflows.py        # Macros (steps com {{label}} interpolation)
+    └── knowledge.py        # KB: PDF/TXT chunking + keyword search + Gemini synthesis
+```
 
-### Pacote compartilhado `/app/mavis/`
-- `mavis/core/brain.py` — Cérebro Gemini 2.5-flash, multimodal (text+image), smart_extract para parse JSON estruturado, 3 personalidades (corporativa/casual/sarcastica), tratamento de rate-limit
-- `mavis/core/long_memory.py` — Fatos persistentes sobre o operador (categorias: pessoal, preferência, trabalho, contato, lugar, agenda, outro)
-- `mavis/core/reminders.py` — Lembretes/alarmes
-- `mavis/core/router.py` — Roteamento de intenções via regex (40+ patterns: sistema, computador, visão, whatsapp, google, mídia, notícias, clima, memória, rotas)
-- `mavis/core/storage.py` — Escrita atômica de JSON
-- `mavis/core/paths.py` — Caminhos centrais (lê do .env)
+### Backend FastAPI (`/app/backend/server.py`) — ~70 endpoints
 
-### Skills
-- `skills/computer.py` — PyAutoGUI (type, click, hotkey, open/close app, lock, shutdown, media keys, clipboard)
-- `skills/vision.py` — Captura screenshot (mss) + análise via Gemini Vision
-- `skills/system_info.py` — psutil (bateria, CPU, RAM, disco)
-- `skills/google_auth.py` — OAuth2 compartilhado (Calendar, Gmail, Drive, Sheets)
-- `skills/google_calendar.py` — Listar agenda hoje/semana, criar evento, frase falável
-- `skills/google_gmail.py` — Listar não-lidos, ler, marcar como lido, enviar, resumir
-- `skills/google_drive.py` — Buscar arquivos, listar recentes
-- `skills/whatsapp.py` — Playwright (ler não-lidos, enviar mensagem)
-- `skills/scheduler.py` — APScheduler background (lembretes)
-- `skills/proactive.py` — Loop que dispara avisos: lembretes vencidos, bateria <20%, reunião em 15min
-- `skills/wake_word.py` — openWakeWord (modelo padrão `hey_jarvis_v0.1`, ou custom)
-- `skills/news_weather.py` — Manchetes RSS (G1/UOL/Tecmundo) + Open-Meteo (sem API key)
+**Core / IA**
+- `/api/health`, `/api/status`, `/api/config` (GET/PATCH personalidade)
+- `/api/chat` — intent routing + skill execution + brain
+- `/api/vision/analyze` — upload + Gemini Vision
+- `/api/tts`, `/api/tts/voices` — Edge TTS
+- `/api/memory` (curta), `/api/long-memory` (longa CRUD)
+- `/api/reminders` + `/api/reminders/natural` (LLM parse) + scheduler
+- `/api/research` — dossier
+- `/api/logs` + WebSocket stream
 
-### Backend FastAPI (`/app/backend/server.py`)
-~40 endpoints organizados:
-- **Health/Status/Config**: `/health`, `/status`, `/config` (GET/PATCH personality)
-- **Chat**: `/chat` (intent routing + skill execution + brain response)
-- **Vision**: `/vision/analyze` (multipart upload)
-- **TTS**: `/tts`, `/tts/voices`
-- **Memória curta**: `/memory` (GET/DELETE)
-- **Memória longa**: `/long-memory` (CRUD)
-- **Lembretes**: `/reminders` (CRUD), `/reminders/natural` (LLM parse), `/reminders/{id}/done`
-- **Rotas**: `/routes` (CRUD)
-- **Relatórios**: `/reports` (CRUD)
-- **Google**: `/google/status`, `/google/calendar/today`, `/google/calendar/week`, `/google/gmail/unread`, `/google/gmail/message/{id}`, `/google/gmail/send`, `/google/drive/recent`, `/google/drive/search`
-- **Skills**: `/skills`, `/system/info`, `/news`, `/weather`
-- **Comandos**: `/commands/execute`
-- **Logs**: `/logs`, `/logs/stream` (WebSocket)
+**Code Lab**
+- `/api/code/generate|explain|review|refactor|convert|debug` (Gemini)
+- `/api/code/execute` — sandbox Python (timeout 8s, módulos bloqueados)
 
-### Frontend React (12 páginas)
-Tema "Tactical Command Center" (industrial brutalist, JARVIS-style):
-1. **Overview** — Hero + stats (rotas, memórias, relatórios, status) + logs live + últimos relatórios
-2. **Chat Neural** — Conversação com TTS no browser + ditado por Web Speech API
-3. **Visão** — Upload de imagem + Gemini Vision
-4. **Banco de Rotas** — CRUD com busca (267 rotas)
-5. **Relatórios** — Lista, preview, copiar, criar manual
-6. **Memória Curta** — Histórico de conversa
-7. **Memória Longa** — Fatos persistentes agrupados por categoria
-8. **Lembretes** — CRUD + criação por linguagem natural
-9. **Google Hub** — Status OAuth + agenda + emails não-lidos + drive recentes + instruções inline do Cloud Console
-10. **Skills** — Catálogo de skills + telemetria (CPU/RAM/Disco/Clima) + manchetes
-11. **Logs Stream** — WebSocket tempo real
-12. **Configuração** — 3 personalidades + 5 vozes Edge TTS testáveis
+**Document Tools**
+- `/api/doc/summarize|translate|rewrite|key-points|sentiment|compose-email`
 
-### App Desktop (`/app/sexta-feira.py`)
-Loop: ouve voz → STT (Google) → router.match_intent → execute_skill_local OU brain.chat_text → TTS Edge → fala
-- Re-agenda lembretes pendentes no startup
-- Modo proativo em thread background
-- Mantém compatibilidade com rotinas.py legacy (FieldControl)
+**Finance** (sem API key)
+- `/api/finance/forex`, `/api/finance/multi`, `/api/finance/crypto` (CoinGecko)
+- `/api/finance/loan` (Price), `/api/finance/compound` (juros compostos com aporte)
 
-### Documentação
-- `README_MAVIS.md` — Setup completo, passo-a-passo Google Cloud Console (criar projeto → habilitar 4 APIs → consent screen → OAuth Desktop App → download credenciais.json → primeiro consentimento), lista de comandos de voz, estrutura de pastas, troubleshooting
+**Productivity**
+- `/api/notes`, `/api/todos` (CRUD), `/api/pomodoro/log`, `/api/pomodoro/stats`
+
+**Workflows**
+- `/api/workflows` (CRUD), `/api/workflows/{id}/run`, `/api/workflows/runs`
+
+**Knowledge Base**
+- `/api/knowledge/documents` (CRUD + upload PDF/TXT/MD), `/api/knowledge/ask` (RAG)
+
+**Google Ecosystem**
+- `/api/google/status`, `/api/google/calendar/{today|week}`, `/api/google/gmail/{unread|message|send}`, `/api/google/drive/{recent|search}`
+
+**Sistema / Skills**
+- `/api/skills`, `/api/system/info`, `/api/news`, `/api/weather`
+
+**Rotas / Relatórios**
+- `/api/routes` (CRUD), `/api/reports` (CRUD)
+
+**Comandos**
+- `/api/commands/execute`
+
+### Frontend React — 19 páginas com tema "Tactical Command Center"
+
+1. Overview (hero + stats + logs live + relatórios recentes)
+2. **Chat Neural** (TTS browser + Web Speech ditado)
+3. **Code Lab** (7 modos: gerar/explicar/revisar/refatorar/converter/debug/executar)
+4. **Document Tools** (6 abas: resumir/traduzir/reescrever/pontos/sentimento/email)
+5. **Research** (dossier multi-step com subqueries + fontes)
+6. **Knowledge Base** (upload + Q&A com citações de fonte)
+7. **Workflows** (builder com steps + {{label}} + histórico)
+8. **Productivity** (Pomodoro timer + Quick Notes + Todos)
+9. **Finance** (5 cotações + calculadora empréstimo + juros compostos + bitcoin)
+10. **Visão** (upload imagem + Gemini Vision)
+11. Banco de Rotas (CRUD 267 rotas)
+12. Relatórios (preview + criar manual)
+13. Memória Curta
+14. Memória Longa (fatos por categoria)
+15. Lembretes (CRUD + criação por frase natural)
+16. **Google Hub** (status OAuth + agenda + emails + drive + instruções inline)
+17. Skills (catálogo + telemetria CPU/RAM/Disco/Clima + manchetes)
+18. Logs Stream (WebSocket)
+19. Configuração (3 personalidades + 5 vozes testáveis)
+
+### Desktop (`/app/sexta-feira.py`)
+Loop voz: STT → router.match_intent → execute_skill_local OU brain.chat_text → TTS → fala. Modo proativo background, re-agenda lembretes pendentes no startup, mantém compat com rotinas.py legacy.
+
+## Implementado nesta sessão (v4.0, 2026-06-03)
+- 8 novos módulos em `mavis/skills/`
+- ~30 endpoints novos no backend
+- 7 páginas novas no frontend (sidebar agora com 19 itens)
+- Sandbox Python seguro (bloqueia subprocess/socket/ctypes/shutil; timeout 8s)
+- Knowledge Base com PDF parsing (pypdf) + chunking + keyword retrieval + Gemini synthesis
+- Workflow engine com state interpolation `{{label}}` entre steps
+- Forex e crypto sem API key
+- Validação: tudo passou via curl (factorial, loan, compound, sandbox-bloqueado-OK)
 
 ## Persona / Operador
-Júlio Cesar — usuário corporativo (engenharia/manutenção ToLife). Quer um JARVIS pessoal eficiente.
-
-## Implementado nesta sessão (v3.0, 2026-06-03)
-- 40+ endpoints novos no backend FastAPI
-- 5 páginas novas no frontend
-- Pacote modular `mavis/` (15 módulos)
-- Cérebro com multimodal vision + smart_extract estruturado
-- 3 personalidades alternáveis
-- Memória de longo prazo (fatos)
-- Lembretes com APScheduler + parser natural
-- Sistema info (CPU/RAM/disco/bateria)
-- Notícias RSS + clima Open-Meteo (zero API keys)
-- Google ecosystem completo (Calendar/Gmail/Drive/Sheets)
-- WhatsApp bidirecional via Playwright
-- Wake word (openWakeWord)
-- Modo proativo background
-- sexta-feira.py refatorado para usar o pacote mavis
-- README_MAVIS.md com passo-a-passo Cloud Console
-
-## Testing
-- **Iteration 1**: backend 19/19 + frontend 100%
-- **Iteration 2**: backend 19/22 (3 falhas = rate limit Gemini free tier 5RPM, confirmadas funcionais com retry) + frontend 100% (todas 12 rotas)
-- Hardening: smart_extract agora propaga `RATE_LIMIT` distintamente; endpoint `/reminders/natural` retorna HTTP 429 com mensagem clara
+Júlio Cesar — usuário corporativo (engenharia/manutenção ToLife)
 
 ## Roadmap / Backlog
-- **P1**: WebSocket bidirecional para acionar comandos do desktop pelo painel em tempo real
-- **P1**: PWA / mobile responsive
-- **P2**: Tags + busca full-text nos relatórios
-- **P2**: Gráficos semanais (KM rodados, emails, eventos)
-- **P2**: Treinar modelo wake word custom "sexta-feira" (openWakeWord)
-- **P2**: PIN/auth simples se exposto fora do localhost
-- **P3**: Spotify integration via OAuth (já tem media keys, mas Spotify Web API daria controle fino)
-- **P3**: WhatsApp business API (mais robusto que Web Playwright)
-- **P3**: Splitar `server.py` em routers separados por domínio quando ultrapassar 1500 LOC
+- **P1**: WebSocket bidirecional painel→desktop pra disparar PyAutoGUI remotamente
+- **P1**: Wake word custom "sexta-feira" treinado em openWakeWord
+- **P1**: Embeddings real para Knowledge Base (atualmente keyword-based) usando text-embedding-004 do Google
+- **P2**: PWA / mobile responsive
+- **P2**: Workflows agendados (cron-like, hoje só on-demand)
+- **P2**: Splittar server.py em routers por domínio (já passou 1000 LOC)
+- **P3**: Spotify Web API OAuth
+- **P3**: Integração Notion / Obsidian para Quick Notes
 
 ## Como Rodar
-- **Backend e Frontend**: gerenciados por supervisor (`sudo supervisorctl status`)
-- **Desktop**: instalar `requirements.txt` (com PortAudio) + `playwright install chromium`, depois `python3 sexta-feira.py`
-- **Google APIs**: seguir `README_MAVIS.md` seção 3
+- Backend e Frontend: supervisor (auto)
+- Desktop: `pip install -r requirements.txt && playwright install chromium && python3 sexta-feira.py`
+- Google APIs: seguir README_MAVIS.md seção 3 (passo-a-passo Cloud Console)

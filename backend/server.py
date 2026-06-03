@@ -726,7 +726,366 @@ async def weather(lat: float = -23.5505, lon: float = -46.6333):
 
 
 # ==============================================================
-# COMANDOS
+# CODE LAB
+# ==============================================================
+class CodeReq(BaseModel):
+    prompt: Optional[str] = None
+    code: Optional[str] = None
+    language: Optional[str] = "python"
+    instruction: Optional[str] = None
+    error: Optional[str] = None
+    to_lang: Optional[str] = None
+    stdin: Optional[str] = ""
+
+
+@api.post("/code/generate")
+async def code_generate(req: CodeReq):
+    from mavis.skills import code_assistant as ca
+    loop = asyncio.get_event_loop()
+    return {"output": await loop.run_in_executor(None, lambda: ca.generate(req.prompt or "", req.language or "python"))}
+
+
+@api.post("/code/explain")
+async def code_explain(req: CodeReq):
+    from mavis.skills import code_assistant as ca
+    loop = asyncio.get_event_loop()
+    return {"output": await loop.run_in_executor(None, lambda: ca.explain(req.code or "", req.language or "auto"))}
+
+
+@api.post("/code/review")
+async def code_review(req: CodeReq):
+    from mavis.skills import code_assistant as ca
+    loop = asyncio.get_event_loop()
+    return {"output": await loop.run_in_executor(None, lambda: ca.review(req.code or "", req.language or "auto"))}
+
+
+@api.post("/code/refactor")
+async def code_refactor(req: CodeReq):
+    from mavis.skills import code_assistant as ca
+    loop = asyncio.get_event_loop()
+    return {"output": await loop.run_in_executor(
+        None, lambda: ca.refactor(req.code or "", req.instruction or "melhorar legibilidade", req.language or "auto"))}
+
+
+@api.post("/code/convert")
+async def code_convert(req: CodeReq):
+    from mavis.skills import code_assistant as ca
+    loop = asyncio.get_event_loop()
+    return {"output": await loop.run_in_executor(
+        None, lambda: ca.convert(req.code or "", req.language or "python", req.to_lang or "javascript"))}
+
+
+@api.post("/code/debug")
+async def code_debug(req: CodeReq):
+    from mavis.skills import code_assistant as ca
+    loop = asyncio.get_event_loop()
+    return {"output": await loop.run_in_executor(
+        None, lambda: ca.debug(req.code or "", req.error or "", req.language or "auto"))}
+
+
+@api.post("/code/execute")
+async def code_execute(req: CodeReq):
+    if not req.code:
+        raise HTTPException(400, "código vazio")
+    from mavis.skills import python_sandbox
+    loop = asyncio.get_event_loop()
+    out = await loop.run_in_executor(None, lambda: python_sandbox.run(req.code, req.stdin or ""))
+    push_log("info", f"PYEXEC > exit={out.get('returncode')} timeout={out.get('timeout_hit')}", "code")
+    return out
+
+
+# ==============================================================
+# DOCUMENT TOOLS
+# ==============================================================
+class DocReq(BaseModel):
+    text: str
+    mode: Optional[str] = "executivo"
+    to_lang: Optional[str] = "inglês"
+    tone: Optional[str] = "formal"
+
+
+@api.post("/doc/summarize")
+async def doc_summarize(req: DocReq):
+    from mavis.skills import document_tools as dt
+    loop = asyncio.get_event_loop()
+    return {"output": await loop.run_in_executor(None, lambda: dt.summarize(req.text, req.mode or "executivo"))}
+
+
+@api.post("/doc/translate")
+async def doc_translate(req: DocReq):
+    from mavis.skills import document_tools as dt
+    loop = asyncio.get_event_loop()
+    return {"output": await loop.run_in_executor(None, lambda: dt.translate(req.text, req.to_lang or "inglês"))}
+
+
+@api.post("/doc/rewrite")
+async def doc_rewrite(req: DocReq):
+    from mavis.skills import document_tools as dt
+    loop = asyncio.get_event_loop()
+    return {"output": await loop.run_in_executor(None, lambda: dt.rewrite(req.text, req.tone or "formal"))}
+
+
+@api.post("/doc/key-points")
+async def doc_key(req: DocReq):
+    from mavis.skills import document_tools as dt
+    loop = asyncio.get_event_loop()
+    return {"output": await loop.run_in_executor(None, lambda: dt.key_points(req.text))}
+
+
+@api.post("/doc/sentiment")
+async def doc_sentiment(req: DocReq):
+    from mavis.skills import document_tools as dt
+    loop = asyncio.get_event_loop()
+    return {"output": await loop.run_in_executor(None, lambda: dt.sentiment(req.text))}
+
+
+class EmailReq(BaseModel):
+    intent: str
+    tone: Optional[str] = "formal"
+    language: Optional[str] = "português"
+
+
+@api.post("/doc/compose-email")
+async def doc_email(req: EmailReq):
+    from mavis.skills import document_tools as dt
+    loop = asyncio.get_event_loop()
+    return {"output": await loop.run_in_executor(
+        None, lambda: dt.compose_email(req.intent, req.tone or "formal", req.language or "português"))}
+
+
+# ==============================================================
+# RESEARCH (Dossier)
+# ==============================================================
+class ResearchReq(BaseModel):
+    topic: str
+
+
+@api.post("/research")
+async def do_research(req: ResearchReq):
+    from mavis.skills import research as rs
+    loop = asyncio.get_event_loop()
+    out = await loop.run_in_executor(None, lambda: rs.dossier(req.topic))
+    push_log("info", f"RESEARCH > {req.topic}", "research")
+    return out
+
+
+# ==============================================================
+# FINANCE
+# ==============================================================
+@api.get("/finance/forex")
+async def fin_forex(base: str = "USD", quote: str = "BRL"):
+    from mavis.skills import finance as fi
+    return fi.forex(base, quote)
+
+
+@api.get("/finance/multi")
+async def fin_multi():
+    from mavis.skills import finance as fi
+    return fi.multi_forex()
+
+
+@api.get("/finance/crypto")
+async def fin_crypto(coin: str = "bitcoin", vs: str = "brl"):
+    from mavis.skills import finance as fi
+    return fi.crypto(coin, vs)
+
+
+class LoanReq(BaseModel):
+    principal: float
+    annual_rate_pct: float
+    months: int
+
+
+@api.post("/finance/loan")
+async def fin_loan(req: LoanReq):
+    from mavis.skills import finance as fi
+    return fi.loan_payment(req.principal, req.annual_rate_pct, req.months)
+
+
+class CompoundReq(BaseModel):
+    principal: float
+    annual_rate_pct: float
+    years: float
+    monthly_contribution: float = 0
+
+
+@api.post("/finance/compound")
+async def fin_compound(req: CompoundReq):
+    from mavis.skills import finance as fi
+    return fi.compound_interest(req.principal, req.annual_rate_pct, req.years, req.monthly_contribution)
+
+
+# ==============================================================
+# PRODUCTIVITY (Notes / Todos / Pomodoro)
+# ==============================================================
+class NoteIn(BaseModel):
+    text: str
+    tag: Optional[str] = ""
+
+
+@api.get("/notes")
+async def notes_list():
+    from mavis.skills import productivity as p
+    return p.list_notes()
+
+
+@api.post("/notes")
+async def notes_add(n: NoteIn):
+    from mavis.skills import productivity as p
+    return p.add_note(n.text, n.tag or "")
+
+
+@api.delete("/notes/{nid}")
+async def notes_del(nid: str):
+    from mavis.skills import productivity as p
+    if not p.delete_note(nid):
+        raise HTTPException(404, "não encontrado")
+    return {"ok": True}
+
+
+class TodoIn(BaseModel):
+    text: str
+    priority: int = 1
+    due: Optional[str] = None
+
+
+@api.get("/todos")
+async def todos_list(only_pending: bool = False):
+    from mavis.skills import productivity as p
+    return p.list_todos(only_pending)
+
+
+@api.post("/todos")
+async def todos_add(t: TodoIn):
+    from mavis.skills import productivity as p
+    return p.add_todo(t.text, t.priority, t.due)
+
+
+@api.post("/todos/{tid}/toggle")
+async def todos_toggle(tid: str):
+    from mavis.skills import productivity as p
+    if not p.toggle_todo(tid):
+        raise HTTPException(404, "não encontrado")
+    return {"ok": True}
+
+
+@api.delete("/todos/{tid}")
+async def todos_del(tid: str):
+    from mavis.skills import productivity as p
+    if not p.delete_todo(tid):
+        raise HTTPException(404, "não encontrado")
+    return {"ok": True}
+
+
+class PomodoroIn(BaseModel):
+    minutes: int = 25
+    label: str = ""
+
+
+@api.post("/pomodoro/log")
+async def pomo_log(p: PomodoroIn):
+    from mavis.skills import productivity as ps
+    return ps.log_pomodoro(p.minutes, p.label)
+
+
+@api.get("/pomodoro/stats")
+async def pomo_stats(days: int = 7):
+    from mavis.skills import productivity as ps
+    return ps.pomodoro_stats(days)
+
+
+# ==============================================================
+# WORKFLOWS
+# ==============================================================
+class WorkflowIn(BaseModel):
+    id: Optional[str] = None
+    name: str
+    description: Optional[str] = ""
+    steps: List[Dict[str, Any]] = []
+
+
+@api.get("/workflows")
+async def wf_list():
+    from mavis.skills import workflows as wf
+    return wf.list_workflows()
+
+
+@api.post("/workflows")
+async def wf_save(w: WorkflowIn):
+    from mavis.skills import workflows as wf
+    return wf.save_workflow(w.model_dump())
+
+
+@api.delete("/workflows/{wid}")
+async def wf_del(wid: str):
+    from mavis.skills import workflows as wf
+    if not wf.delete_workflow(wid):
+        raise HTTPException(404, "não encontrado")
+    return {"ok": True}
+
+
+@api.post("/workflows/{wid}/run")
+async def wf_run(wid: str):
+    from mavis.skills import workflows as wf
+    items = wf.list_workflows()
+    w = next((x for x in items if x["id"] == wid), None)
+    if not w:
+        raise HTTPException(404, "não encontrado")
+    loop = asyncio.get_event_loop()
+    record = await loop.run_in_executor(None, lambda: wf.execute_workflow(w))
+    push_log("info", f"WORKFLOW > {w['name']} executed", "workflow")
+    return record
+
+
+@api.get("/workflows/runs")
+async def wf_runs(limit: int = 20):
+    from mavis.skills import workflows as wf
+    return wf.list_runs(limit)
+
+
+# ==============================================================
+# KNOWLEDGE BASE
+# ==============================================================
+@api.get("/knowledge/documents")
+async def kb_list():
+    from mavis.skills import knowledge as kb
+    return kb.list_documents()
+
+
+@api.post("/knowledge/documents")
+async def kb_add(file: UploadFile = File(...)):
+    from mavis.skills import knowledge as kb
+    data = await file.read()
+    if not data:
+        raise HTTPException(400, "arquivo vazio")
+    out = kb.add_document(file.filename or "doc", data)
+    if "error" in out:
+        raise HTTPException(400, out["error"])
+    push_log("info", f"KB > +{file.filename} ({out['chunks']} chunks)", "knowledge")
+    return out
+
+
+@api.delete("/knowledge/documents/{doc_id}")
+async def kb_del(doc_id: str):
+    from mavis.skills import knowledge as kb
+    if not kb.delete_document(doc_id):
+        raise HTTPException(404, "não encontrado")
+    return {"ok": True}
+
+
+class KbAsk(BaseModel):
+    query: str
+
+
+@api.post("/knowledge/ask")
+async def kb_ask(body: KbAsk):
+    from mavis.skills import knowledge as kb
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, lambda: kb.ask(body.query))
+
+
+# ==============================================================
+# COMANDOS (legacy + chat)
 # ==============================================================
 @api.post("/commands/execute")
 async def execute_command(req: CommandRequest):

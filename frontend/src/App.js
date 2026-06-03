@@ -14,6 +14,13 @@ import Reminders from "./pages/Reminders";
 import GoogleHub from "./pages/GoogleHub";
 import Vision from "./pages/Vision";
 import Skills from "./pages/Skills";
+import CodeLab from "./pages/CodeLab";
+import DocumentTools from "./pages/DocumentTools";
+import Research from "./pages/Research";
+import Finance from "./pages/Finance";
+import Productivity from "./pages/Productivity";
+import Knowledge from "./pages/Knowledge";
+import Workflows from "./pages/Workflows";
 
 export default function App() {
   return (
@@ -35,6 +42,13 @@ export default function App() {
         <Route element={<Layout />}>
           <Route path="/" element={<Overview />} />
           <Route path="/chat" element={<Chat />} />
+          <Route path="/code" element={<CodeLab />} />
+          <Route path="/document" element={<DocumentTools />} />
+          <Route path="/research" element={<Research />} />
+          <Route path="/knowledge" element={<Knowledge />} />
+          <Route path="/workflows" element={<Workflows />} />
+          <Route path="/productivity" element={<Productivity />} />
+          <Route path="/finance" element={<Finance />} />
           <Route path="/vision" element={<Vision />} />
           <Route path="/routes" element={<RoutesPage />} />
           <Route path="/reports" element={<Reports />} />

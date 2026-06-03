@@ -30,6 +30,9 @@ mss>=9.0.2
 # Browser RPA (WhatsApp + FieldControl)
 playwright>=1.40.0
 
+# Documentos
+pypdf>=5.0.0
+
 # Scheduler / lembretes
 apscheduler>=3.10.4
 
