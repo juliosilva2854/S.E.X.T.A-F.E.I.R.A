@@ -1,14 +1,6 @@
 [
     {
         "role": "Usuário",
-        "texto": "nossa parece um portal gente"
-    },
-    {
-        "role": "Sexta-feira",
-        "texto": "Entendido, senhor. Eu sou um sistema de consulta de rotas e distâncias.\n\nPosso ajudar com alguma informação sobre as rotas disponíveis no meu sistema?"
-    },
-    {
-        "role": "Usuário",
         "texto": "ainda é assim mas só funciona"
     },
     {
@@ -118,5 +110,13 @@
     {
         "role": "Sexta-feira",
         "texto": "Senhor, estou ouvindo e operacional. Em que posso auxiliá-lo?"
+    },
+    {
+        "role": "Usuário",
+        "texto": "Bom dia, qual é a distancia até o box e vila mariana contando com a volta para casa"
+    },
+    {
+        "role": "Sexta-feira",
+        "texto": "Senhor, a distância de CASA para BOX é de 35 KM. De BOX para VILA MARIANA é de 22 KM. De VILA MARIANA para CASA é de 27 KM. O total da rota é de 84 KM."
     }
 ]
