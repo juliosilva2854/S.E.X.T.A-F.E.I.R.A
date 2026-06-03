@@ -133,9 +133,8 @@ def extrair_descricoes_fieldcontrol(tickets_list):
     print(f"[FieldControl] Iniciando robô navegador para {len(tickets_list)} tickets...")
     
     with sync_playwright() as p:
-        navegador = p.chromium.launch(headless=False) 
-        # CORREÇÃO: Força o navegador a rodar em resolução Full HD para evitar elementos fora do viewport
-        contexto = navegador.new_context(viewport={"width": 1920, "height": 1080}) 
+        navegador = p.chromium.launch(headless=False, args=['--start-maximized']) 
+        contexto = navegador.new_context(no_viewport=True) 
         pagina = contexto.new_page()
         
         try:
@@ -198,21 +197,23 @@ def extrair_descricoes_fieldcontrol(tickets_list):
                     pagina.keyboard.press("Escape")
                     pagina.wait_for_timeout(1500)
                     
-                    # Clique Primeiro Editar (Tabela CDK)
-                    linha_resultado = pagina.locator('cdk-row').first
-                    linha_resultado.locator('cdk-cell.cdk-column-action palantir-button').first.click(force=True)
-                    pagina.wait_for_timeout(2000)
+                    linha_resultado = pagina.locator('.cdk-row').first
                     
-                    # Clique Segundo Editar (Painel Superior Mapeado)
-                    botao_segundo_editar = pagina.locator('order-task-card palantir-toolbar-suffix palantir-button:nth-child(2)')
                     try:
-                        botao_segundo_editar.click(timeout=3000, force=True)
+                        botao_primeiro_editar = linha_resultado.locator('.cdk-column-action palantir-button').first
+                        botao_primeiro_editar.scroll_into_view_if_needed()
+                        botao_primeiro_editar.click(timeout=5000, force=True)
                     except:
-                        pagina.locator('palantir-button').filter(has=pagina.locator('path[d^="M2.999"]')).last.click(force=True)
+                        botao_svg = linha_resultado.locator('palantir-button').filter(has=pagina.locator('path[d^="M5 19h"]')).first
+                        botao_svg.scroll_into_view_if_needed()
+                        botao_svg.click(timeout=5000, force=True)
                         
                     pagina.wait_for_timeout(2000)
                     
-                    # Extração Avançada via DOM JavaScript
+                    botao_segundo_editar = pagina.locator('palantir-button').filter(has=pagina.locator('path[d^="M2.999"]')).last
+                    botao_segundo_editar.click(timeout=5000, force=True)
+                    pagina.wait_for_timeout(2000)
+                    
                     textareas = pagina.locator('textarea').element_handles()
                     if textareas:
                         ultimo_textarea = textareas[-1]
@@ -288,7 +289,7 @@ def formatar_relatorio_com_ia(tickets, data_inicio_str, data_fim_str):
             return resposta.text
         except Exception as e:
             erro_str = str(e)
-            if ("503" in erro_str or "429" in erro_str or "RESOURCE_EXHAUSTED" in erro_str) and tentativa < tentatives - 1:
+            if ("503" in erro_str or "429" in erro_str or "RESOURCE_EXHAUSTED" in erro_str) and tentativa < tentativas - 1:
                 tempo_espera = 30 if ("429" in erro_str or "RESOURCE_EXHAUSTED" in erro_str) else 5
                 print(f"    [!] Servidor ocupado. Aguardando {tempo_espera} segundos... (Tentativa {tentativa + 1}/{tentativas})")
                 time.sleep(tempo_espera)
@@ -296,7 +297,62 @@ def formatar_relatorio_com_ia(tickets, data_inicio_str, data_fim_str):
                 return f"Senhor, os dados foram extraídos, mas houve falha na geração do texto pela IA. Erro: {e}"
 
 # ==========================================
-# 6. GATILHO DA ROTINA PRINCIPAL
+# 6. MENSAGEIRO WHATSAPP PARA GRUPOS
+# ==========================================
+def enviar_whatsapp(texto):
+    print("[WhatsApp] Preparando para enviar o relatório para o grupo...")
+    
+    if not hasattr(config, 'WHATSAPP_GRUPO') or not config.WHATSAPP_GRUPO:
+        print("[WhatsApp] ERRO: A variável WHATSAPP_GRUPO não foi encontrada no config.py.")
+        return
+
+    with sync_playwright() as p:
+        caminho_sessao = os.path.join(os.getcwd(), "sessao_whatsapp")
+        contexto = p.chromium.launch_persistent_context(
+            user_data_dir=caminho_sessao, 
+            headless=False,
+            args=['--start-maximized'],
+            no_viewport=True
+        )
+        pagina = contexto.pages[0]
+        
+        try:
+            print(" -> Acessando o WhatsApp Web principal...")
+            pagina.goto("https://web.whatsapp.com/")
+            
+            print(" -> Aguardando sincronização (Aguardando barra de pesquisa)...")
+            # SELETOR UNIVERSAL: Procura por qualquer campo editável, ignorando a tag HTML (div, p, span...)
+            caixa_busca = pagina.locator('[contenteditable="true"]').first
+            caixa_busca.wait_for(state="visible", timeout=60000)
+            
+            print(f" -> Procurando o grupo: '{config.WHATSAPP_GRUPO}'...")
+            caixa_busca.click()
+            pagina.keyboard.insert_text(config.WHATSAPP_GRUPO)
+            pagina.wait_for_timeout(3000) 
+            pagina.keyboard.press("Enter")
+            pagina.wait_for_timeout(3000) 
+            
+            print(" -> Digitando o relatório...")
+            # SELETOR UNIVERSAL: Foca no painel principal da conversa e pega o campo editável
+            caixa_mensagem = pagina.locator('#main [contenteditable="true"]').first
+            caixa_mensagem.click()
+            
+            pagina.keyboard.insert_text(texto)
+            pagina.wait_for_timeout(2000)
+            
+            print(" -> Enviando mensagem para o grupo...")
+            pagina.keyboard.press("Enter")
+            
+            print("[WhatsApp] Relatório enviado com sucesso para o grupo!")
+            pagina.wait_for_timeout(4000) 
+            
+        except Exception as e:
+            print(f"[WhatsApp] Erro de envio. Se foi o 1º acesso, não esqueça de ler o QR Code a tempo. Erro: {e}")
+        finally:
+            contexto.close()
+
+# ==========================================
+# 7. GATILHO DA ROTINA PRINCIPAL
 # ==========================================
 def gerar_resumo(comando):
     data_inicio_str, data_fim_str, dt_i, dt_f = interpretar_data_comando(comando)
@@ -316,7 +372,8 @@ def gerar_resumo(comando):
     
     if "Erro:" not in texto_final and "falha na geração" not in texto_final:
         salvar_relatorio_bd(data_inicio_str, data_fim_str, texto_final)
+        enviar_whatsapp(texto_final) 
     else:
-        print("[Banco de Dados] Salvamento abortado devido a falha na IA.")
+        print("[Banco de Dados/WhatsApp] Ações abortadas devido a falha na IA.")
         
-    return "O relatório está concluído, senhor. O texto foi gerado, impresso na tela e guardado com sucesso no nosso banco de dados local."
+    return "O relatório está concluído, senhor. Foi salvo no banco e enviado ao grupo do WhatsApp."

@@ -214,7 +214,7 @@ if __name__ == "__main__":
         limpar_tela()
         print("=======================================")
         print(f"       S.E.X.T.A - F.E.I.R.A          ")
-        print("=====================================\n")
+        print("======================================\n")
             
         if not manter_ouvido_aberto:
             falar("Pois não senhor?") 
@@ -231,6 +231,7 @@ if __name__ == "__main__":
             if "desligar" in comando:
                 falar("Desligando núcleos e encerrando rotinas de background. Até logo, senhor.")
                 break
+
             else:
                 # 1. Roteador de Ações Físicas
                 resposta_da_acao = rotinas.executar_rotina_local(comando)
