@@ -584,6 +584,43 @@ def export_rows(start: str = "", end: str = "", unidade: str = "") -> List[Dict[
     return rows
 
 
+def resumo_texto(
+    start: str = "", end: str = "", unidade: str = "",
+    fuel_cost_per_liter: float = 5.89, km_per_liter: float = 10.0,
+    titulo: str = "",
+) -> str:
+    """Monta um resumo executivo em texto (pronto para WhatsApp)."""
+    k = kpis_filtered(start, end, unidade, fuel_cost_per_liter, km_per_liter)
+    if not titulo:
+        if start or end:
+            titulo = f"{start or '...'} a {end or '...'}"
+        elif unidade:
+            titulo = unidade
+        else:
+            titulo = "Geral"
+
+    top = k.get("top_destinos", [])[:3]
+    top_str = " · ".join(f"{d['unidade']} ({d['visitas']}x)" for d in top) if top else "—"
+
+    linhas = [
+        f"*RESUMO SEXTA-FEIRA — {titulo}*",
+        "",
+        f"KM rodados: *{k['total_km']} km*  ({k['total_dias']} dias úteis)",
+        f"Média: {k['media_km_dia']} km/dia · {k['media_km_semana']} km/semana",
+        f"Combustível: ~{k['litros_estimados']} L · *R$ {k['custo_combustivel']:.2f}*",
+        "",
+        f"Preventivas: {k['total_preventivas']}",
+        f"Atendimentos técnicos: {k['total_atendimentos']}",
+        f"Entregas de insumos: {k['total_entregas_insumos']}",
+        f"Trocas / substituições: {k['total_trocas_equipamentos']}",
+        "",
+        f"Top destinos: {top_str}",
+    ]
+    if k.get("primeiro_dia") and k.get("ultimo_dia"):
+        linhas.append(f"Período de dados: {k['primeiro_dia']} → {k['ultimo_dia']}")
+    return "\n".join(linhas)
+
+
 def month_detail(month_str: str) -> Dict[str, Any]:
     """Detalhe de um mês específico (YYYY-MM)."""
     parsed = parse_all()

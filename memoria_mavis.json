@@ -1,14 +1,6 @@
 [
     {
         "role": "Usuário",
-        "texto": "ainda é assim mas só funciona"
-    },
-    {
-        "role": "Sexta-feira",
-        "texto": "Sim, senhor. Eu estou em pleno funcionamento para consultar as rotas e distâncias que tenho no sistema.\n\nO senhor gostaria de fazer alguma consulta sobre as rotas disponíveis?"
-    },
-    {
-        "role": "Usuário",
         "texto": "procurar relatório dessa semana"
     },
     {
@@ -118,5 +110,13 @@
     {
         "role": "Sexta-feira",
         "texto": "Senhor, a distância de CASA para BOX é de 35 KM. De BOX para VILA MARIANA é de 22 KM. De VILA MARIANA para CASA é de 27 KM. O total da rota é de 84 KM."
+    },
+    {
+        "role": "Usuário",
+        "texto": "Responda só com OK se você está online."
+    },
+    {
+        "role": "Sexta-feira",
+        "texto": "OK"
     }
 ]

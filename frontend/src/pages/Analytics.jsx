@@ -9,7 +9,7 @@ import {
 } from "recharts";
 import {
   ChartLine, Gauge, MapPin, Wrench, Fire, GasPump, CalendarBlank, ArrowsClockwise,
-  FileCsv, FileXls, FilePdf, FunnelSimple, X, Path, Truck, Wrench as WrenchIcon,
+  FileCsv, FileXls, FilePdf, FunnelSimple, X, Path, Truck, Wrench as WrenchIcon, WhatsappLogo,
 } from "@phosphor-icons/react";
 import { toast } from "sonner";
 
@@ -40,6 +40,12 @@ export default function Analytics() {
   const [unidade, setUnidade] = useState("");
   const [fuelCost, setFuelCost] = useState(5.89);
   const [kmPerLiter, setKmPerLiter] = useState(10);
+
+  // relatório automático
+  const [autoCfg, setAutoCfg] = useState(null);
+  const [autoNext, setAutoNext] = useState(null);
+  const [autoReports, setAutoReports] = useState([]);
+  const [genBusy, setGenBusy] = useState(false);
 
   // refs do mapa
   const mapInstance = useRef(null);
@@ -97,9 +103,45 @@ export default function Analytics() {
   useEffect(() => {
     api.get("/analytics/monthly?months=12").then((r) => setMonthly(r.data)).catch(() => {});
     api.get("/analytics/unidades").then((r) => setUnidades(r.data)).catch(() => {});
+    loadAutoReport();
     loadAll();
     // eslint-disable-next-line
   }, []);
+
+  const loadAutoReport = async () => {
+    try {
+      const { data } = await api.get("/analytics/auto-report");
+      setAutoCfg(data.config); setAutoNext(data.next_run); setAutoReports(data.reports || []);
+    } catch { /* silencioso */ }
+  };
+
+  const saveAutoCfg = async (patch) => {
+    const optimistic = { ...autoCfg, ...patch };
+    setAutoCfg(optimistic);
+    try {
+      const { data } = await api.post("/analytics/auto-report", patch);
+      setAutoCfg(data.config); setAutoNext(data.next_run);
+      toast.success("Agendamento atualizado");
+    } catch { toast.error("Falha ao salvar agendamento"); loadAutoReport(); }
+  };
+
+  const runReportNow = async () => {
+    setGenBusy(true);
+    try {
+      const { data } = await api.post("/analytics/auto-report/run-now");
+      toast.success(`Relatório gerado (${data.total_km} km)`);
+      downloadReport(data.filename);
+      loadAutoReport();
+    } catch { toast.error("Falha ao gerar relatório"); }
+    finally { setGenBusy(false); }
+  };
+
+  const downloadReport = (filename) => {
+    const a = document.createElement("a");
+    a.href = `${API}/analytics/auto-report/download/${encodeURIComponent(filename)}`;
+    a.rel = "noopener";
+    document.body.appendChild(a); a.click(); a.remove();
+  };
 
   // ---- Mapa: atualiza heat + marcadores quando mapData muda ----
   useEffect(() => {
@@ -139,6 +181,23 @@ export default function Analytics() {
     toast.success(`Exportando ${format.toUpperCase()}…`);
   };
 
+  const shareWhatsApp = async (override = null, titulo = "") => {
+    try {
+      const qs = filterQS({ fuel_cost: fuelCost, km_per_liter: kmPerLiter, ...(titulo ? { titulo } : {}) }, override);
+      const { data } = await api.get(`/analytics/resumo?${qs}`);
+      // baixa o PDF para o usuário anexar no WhatsApp
+      const pdfUrl = `${API}/analytics/export?${filterQS({ format: "pdf", fuel_cost: fuelCost, km_per_liter: kmPerLiter }, override)}`;
+      const a = document.createElement("a");
+      a.href = pdfUrl; a.rel = "noopener";
+      document.body.appendChild(a); a.click(); a.remove();
+      // abre o WhatsApp com o resumo pronto
+      window.open(`https://wa.me/?text=${encodeURIComponent(data.texto)}`, "_blank", "noopener");
+      toast.success(`Resumo pronto! Escolha o grupo "${data.grupo || "WhatsApp"}" e anexe o PDF baixado.`);
+    } catch {
+      toast.error("Falha ao gerar o resumo");
+    }
+  };
+
   const clearFilters = () => {
     setStart(""); setEnd(""); setUnidade("");
     loadAll({ start: "", end: "", unidade: "" });
@@ -158,6 +217,10 @@ export default function Analytics() {
             </p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
+            <button onClick={() => shareWhatsApp()} data-testid="share-whatsapp-button"
+              className="inline-flex items-center gap-1.5 bg-[#25D366] text-[#052e16] hover:bg-[#22c55e] font-bold uppercase tracking-wider text-xs px-3 py-2 rounded transition-colors">
+              <WhatsappLogo size={15} weight="fill" /> Compartilhar
+            </button>
             <ExportBtn icon={FileCsv} label="CSV" onClick={() => exportData("csv")} testid="export-csv-button" />
             <ExportBtn icon={FileXls} label="EXCEL" onClick={() => exportData("xlsx")} testid="export-xlsx-button" />
             <ExportBtn icon={FilePdf} label="PDF" onClick={() => exportData("pdf")} testid="export-pdf-button" />
@@ -390,6 +453,67 @@ export default function Analytics() {
               </div>
             </Panel>
 
+            {/* RELATÓRIO AUTOMÁTICO */}
+            {autoCfg && (
+              <Panel title="Relatório automático semanal"
+                right={autoNext ? `próximo: ${new Date(autoNext).toLocaleString("pt-BR")}` : "desativado"}>
+                <div className="p-5 grid grid-cols-1 lg:grid-cols-2 gap-5">
+                  <div className="space-y-4">
+                    <label className="flex items-center gap-3 cursor-pointer">
+                      <input type="checkbox" data-testid="auto-report-enabled" checked={!!autoCfg.enabled}
+                        onChange={(e) => saveAutoCfg({ enabled: e.target.checked })}
+                        className="w-4 h-4 accent-amber-500" />
+                      <span className="text-gray-200 text-sm">Ativar geração automática (resumo + PDF)</span>
+                    </label>
+                    <div className="flex flex-wrap items-end gap-3">
+                      <Field label="Dia">
+                        <select data-testid="auto-report-day" value={autoCfg.day_of_week}
+                          onChange={(e) => saveAutoCfg({ day_of_week: e.target.value })}
+                          className="bg-[#050505] border border-[#27272A] text-gray-200 text-sm rounded px-3 py-1.5 focus:border-amber-500 focus:outline-none">
+                          {[["mon", "Segunda"], ["tue", "Terça"], ["wed", "Quarta"], ["thu", "Quinta"], ["fri", "Sexta"], ["sat", "Sábado"], ["sun", "Domingo"]]
+                            .map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                        </select>
+                      </Field>
+                      <Field label="Hora">
+                        <input data-testid="auto-report-hour" type="number" min="0" max="23" value={autoCfg.hour}
+                          onChange={(e) => saveAutoCfg({ hour: parseInt(e.target.value || "0", 10) })}
+                          className="w-20 bg-[#050505] border border-[#27272A] text-gray-200 text-sm rounded px-3 py-1.5 focus:border-amber-500 focus:outline-none" />
+                      </Field>
+                      <Field label="Min">
+                        <input data-testid="auto-report-minute" type="number" min="0" max="59" value={autoCfg.minute}
+                          onChange={(e) => saveAutoCfg({ minute: parseInt(e.target.value || "0", 10) })}
+                          className="w-20 bg-[#050505] border border-[#27272A] text-gray-200 text-sm rounded px-3 py-1.5 focus:border-amber-500 focus:outline-none" />
+                      </Field>
+                    </div>
+                    <label className="flex items-center gap-3 cursor-pointer">
+                      <input type="checkbox" data-testid="auto-report-whatsapp" checked={!!autoCfg.send_whatsapp}
+                        onChange={(e) => saveAutoCfg({ send_whatsapp: e.target.checked })}
+                        className="w-4 h-4 accent-[#25D366]" />
+                      <span className="text-gray-400 text-xs">Enviar no WhatsApp automaticamente <span className="text-amber-500">(somente no app desktop)</span></span>
+                    </label>
+                    <button onClick={runReportNow} disabled={genBusy} data-testid="auto-report-run-now"
+                      className="inline-flex items-center gap-2 bg-amber-500 text-[#050505] hover:bg-amber-400 disabled:opacity-50 font-bold uppercase tracking-wider text-xs px-5 py-2 rounded transition-colors">
+                      <FilePdf size={14} weight="bold" /> {genBusy ? "Gerando…" : "Gerar agora"}
+                    </button>
+                  </div>
+                  <div>
+                    <div className="text-gray-500 text-[10px] uppercase tracking-widest mb-2">Relatórios gerados</div>
+                    <div className="space-y-1 font-mono text-xs max-h-52 overflow-auto" data-testid="auto-report-list">
+                      {autoReports.length === 0 && <div className="text-gray-600">Nenhum relatório ainda.</div>}
+                      {autoReports.map((r) => (
+                        <button key={r.filename} onClick={() => downloadReport(r.filename)}
+                          data-testid={`auto-report-item-${r.filename}`}
+                          className="w-full flex items-center justify-between gap-3 py-2 px-2 border-b border-[#27272A] hover:bg-[#141414] rounded text-left transition-colors">
+                          <span className="text-gray-300 truncate">{r.titulo || r.periodo}</span>
+                          <span className="text-amber-500 whitespace-nowrap">{r.total_km} km · baixar</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </Panel>
+            )}
+
             <div className="bg-[#0A0A0A] border border-[#27272A] rounded-lg p-4 text-xs text-gray-500 leading-relaxed">
               <span className="text-amber-500 tracking-[0.2em] uppercase text-[10px] font-bold">// Metodologia</span>{" "}
               KM calculado pelo cruzamento com banco_de_dados.json (267 rotas): cada dia CASA → loc1 → … → CASA.
@@ -408,8 +532,19 @@ export default function Analytics() {
             className="bg-[#0A0A0A] border border-amber-500/50 rounded-lg shadow-[0_0_40px_rgba(245,158,11,0.15)] w-full max-w-3xl max-h-[90vh] overflow-auto">
             <div className="flex items-center justify-between px-6 py-4 border-b border-[#27272A] sticky top-0 bg-[#0A0A0A]">
               <span className="text-lg font-bold text-amber-500 uppercase tracking-widest">Detalhe · {monthDetail.month}</span>
-              <button onClick={() => setMonthDetail(null)} data-testid="close-month-modal"
-                className="text-gray-400 hover:text-amber-500 transition-colors"><X size={20} weight="bold" /></button>
+              <div className="flex items-center gap-2">
+                <button data-testid="share-month-button"
+                  onClick={() => {
+                    const m = monthDetail.month; const [y, mo] = m.split("-");
+                    const last = new Date(Number(y), Number(mo), 0).getDate();
+                    shareWhatsApp({ start: `${m}-01`, end: `${m}-${String(last).padStart(2, "0")}` }, m);
+                  }}
+                  className="inline-flex items-center gap-1.5 bg-[#25D366] text-[#052e16] hover:bg-[#22c55e] font-bold uppercase tracking-wider text-[11px] px-3 py-1.5 rounded transition-colors">
+                  <WhatsappLogo size={14} weight="fill" /> Compartilhar
+                </button>
+                <button onClick={() => setMonthDetail(null)} data-testid="close-month-modal"
+                  className="text-gray-400 hover:text-amber-500 transition-colors"><X size={20} weight="bold" /></button>
+              </div>
             </div>
             <div className="p-6 space-y-5">
               <div className="grid grid-cols-3 gap-4">

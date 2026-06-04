@@ -45,6 +45,20 @@ https://route-insights-5.preview.emergentagent.com  → página: /analytics
 - **Restrições**: NÃO alterar `pydantic-core==2.23.4` nem `tzlocal/pytz`. Manter cache de geocoding.
 - react-leaflet@5 é incompatível com React 18 → usamos **Leaflet vanilla** diretamente (não react-leaflet).
 
+### 03/06/2026 — Restauração do .env + Compartilhamento WhatsApp ✅
+- **`.env` corrigido** com os valores reais do usuário: `DB_NAME=sexta_feira` (estava errado),
+  **CHAVE_GEMINI** restaurada (chat/IA ATIVO — validado), voz `pt-BR-ThalitaNeural`,
+  personalidade `corporativa`, Field Control e WhatsApp.
+- **Melhoria — "Compartilhar relatório no WhatsApp"**:
+  - Backend: `GET /api/analytics/resumo` gera um resumo executivo em texto (KM, combustível,
+    atividades, top destinos) pronto para WhatsApp; aceita filtros + `titulo`.
+  - Frontend: botão verde "COMPARTILHAR" no header e botão no modal mensal → gera o resumo,
+    baixa o PDF do período e abre `wa.me` com a mensagem pronta (usuário escolhe o grupo
+    "Resumos - ToLife" e anexa o PDF). Funciona em qualquer ambiente (não depende do desktop).
+  - Testes: 18/18 pytest backend (inclui resumo) passando.
+- **Guia criado**: `/app/COMO_RODAR_EM_BACKGROUND.md` (NSSM / Agendador / Docker) para o item
+  P1 de execução em background (que é deploy local — RPA/WhatsApp auto são desktop-only).
+
 ## Backlog / Próximos passos
 - P1: Pedir ao usuário a CHAVE_GEMINI para reativar o chat/IA.
 - P1: Execução em background (Docker Compose / serviço Windows / PWA / Electron).

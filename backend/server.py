@@ -1204,6 +1204,73 @@ async def auto_weekly():
     return out
 
 
+class AutoReportConfig(BaseModel):
+    enabled: Optional[bool] = None
+    day_of_week: Optional[str] = None
+    hour: Optional[int] = None
+    minute: Optional[int] = None
+    period_days: Optional[int] = None
+    send_whatsapp: Optional[bool] = None
+
+
+def _run_auto_report():
+    """Callback do scheduler: gera o relatório semanal (resumo + PDF)."""
+    from mavis.skills import auto_report as ar
+    try:
+        res = ar.generate_and_store()
+        push_log("info", f"📄 Relatório automático gerado: {res['filename']} ({res['total_km']} km · WhatsApp: {res['whatsapp']})", "analytics")
+        return res
+    except Exception as e:
+        push_log("error", f"Falha no relatório automático: {e}", "analytics")
+        return {"error": str(e)}
+
+
+def _schedule_auto_report():
+    """(Re)agenda o job semanal conforme a config. Remove se desativado."""
+    from mavis.skills import auto_report as ar
+    cfg = ar.get_config()
+    sched_skill.remove_job("auto-report-weekly")
+    if cfg.get("enabled"):
+        sched_skill.schedule_recurring(ar.cron_expr(), _run_auto_report, job_id="auto-report-weekly")
+        push_log("info", f"Relatório automático ativo: {ar.WEEKDAYS_PT.get(cfg['day_of_week'], cfg['day_of_week'])} {cfg['hour']:02d}:{cfg['minute']:02d}", "analytics")
+
+
+@api.get("/analytics/auto-report")
+async def get_auto_report():
+    from mavis.skills import auto_report as ar
+    cfg = ar.get_config()
+    jobs = [j for j in sched_skill.list_jobs() if j["id"] == "auto-report-weekly"]
+    return {"config": cfg, "next_run": jobs[0]["next_run"] if jobs else None, "reports": ar.list_reports()}
+
+
+@api.post("/analytics/auto-report")
+async def set_auto_report(body: AutoReportConfig):
+    from mavis.skills import auto_report as ar
+    cfg = ar.set_config(body.dict(exclude_none=True))
+    _schedule_auto_report()
+    jobs = [j for j in sched_skill.list_jobs() if j["id"] == "auto-report-weekly"]
+    return {"config": cfg, "next_run": jobs[0]["next_run"] if jobs else None}
+
+
+@api.post("/analytics/auto-report/run-now")
+async def run_auto_report_now():
+    from mavis.skills import auto_report as ar
+    loop = asyncio.get_event_loop()
+    res = await loop.run_in_executor(None, ar.generate_and_store)
+    push_log("info", f"📄 Relatório gerado manualmente: {res['filename']}", "analytics")
+    return res
+
+
+@api.get("/analytics/auto-report/download/{filename}")
+async def download_auto_report(filename: str):
+    from mavis.skills import auto_report as ar
+    p = ar.report_path(filename)
+    if not p.exists():
+        raise HTTPException(404, "relatório não encontrado")
+    return Response(content=p.read_bytes(), media_type="application/pdf",
+                    headers={"Content-Disposition": f'attachment; filename="{p.name}"'})
+
+
 # ==============================================================
 # AGENT MODE (autônomo)
 # ==============================================================
@@ -1256,6 +1323,16 @@ async def analytics_map_data(start: str = "", end: str = "", unidade: str = "",
                              allow_remote: bool = True):
     from mavis.skills import analytics as an
     return an.map_data(start=start, end=end, unidade=unidade, allow_remote=allow_remote)
+
+
+@api.get("/analytics/resumo")
+async def analytics_resumo(start: str = "", end: str = "", unidade: str = "",
+                          fuel_cost: float = 5.89, km_per_liter: float = 10.0, titulo: str = ""):
+    """Resumo executivo em texto (pronto para compartilhar no WhatsApp)."""
+    from mavis.skills import analytics as an
+    texto = an.resumo_texto(start=start, end=end, unidade=unidade,
+                            fuel_cost_per_liter=fuel_cost, km_per_liter=km_per_liter, titulo=titulo)
+    return {"texto": texto, "grupo": os.environ.get("WHATSAPP_GRUPO", "")}
 
 
 @api.get("/analytics/export")
@@ -1417,6 +1494,11 @@ async def startup():
         except Exception:
             pass
     push_log("info", f"Scheduler online ({len(sched_skill.list_jobs())} jobs ativos)", "system")
+    # Agenda o relatório automático semanal, se ativado
+    try:
+        _schedule_auto_report()
+    except Exception as e:
+        push_log("error", f"Falha ao agendar relatório automático: {e}", "system")
 
 
 @app.on_event("shutdown")

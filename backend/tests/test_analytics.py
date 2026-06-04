@@ -67,6 +67,54 @@ def test_export_invalid_format():
     assert r.status_code == 400
 
 
+def test_resumo_texto():
+    r = requests.get(f"{BASE}/resumo", timeout=30)
+    assert r.status_code == 200
+    d = r.json()
+    assert "texto" in d and "RESUMO SEXTA-FEIRA" in d["texto"]
+    assert "KM rodados" in d["texto"]
+    assert "grupo" in d
+
+
+def test_resumo_filtrado():
+    r = requests.get(f"{BASE}/resumo", params={"start": "2026-05-01", "end": "2026-05-31", "titulo": "2026-05"}, timeout=30)
+    assert r.status_code == 200
+    assert "2026-05" in r.json()["texto"]
+
+
+def test_auto_report_config_get():
+    r = requests.get(f"{BASE}/auto-report", timeout=30)
+    assert r.status_code == 200
+    d = r.json()
+    assert "config" in d and "reports" in d
+    assert "day_of_week" in d["config"]
+
+
+def test_auto_report_enable_and_schedule():
+    r = requests.post(f"{BASE}/auto-report", json={"enabled": True, "day_of_week": "fri", "hour": 18, "minute": 0}, timeout=30)
+    assert r.status_code == 200
+    d = r.json()
+    assert d["config"]["enabled"] is True
+    assert d["next_run"]  # cron agendado
+
+
+def test_auto_report_run_now_and_download():
+    r = requests.post(f"{BASE}/auto-report/run-now", timeout=60)
+    assert r.status_code == 200
+    fn = r.json()["filename"]
+    assert fn.endswith(".pdf")
+    dl = requests.get(f"{BASE}/auto-report/download/{fn}", timeout=30)
+    assert dl.status_code == 200
+    assert dl.content[:4] == b"%PDF"
+
+
+def test_auto_report_download_404():
+    r = requests.get(f"{BASE}/auto-report/download/inexistente.pdf", timeout=30)
+    assert r.status_code == 404
+
+
+
+
 
 def test_daily():
     r = requests.get(f"{BASE}/daily", timeout=30)
