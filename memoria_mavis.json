@@ -1,14 +1,6 @@
 [
     {
         "role": "Usuário",
-        "texto": "procurar relatório dessa semana"
-    },
-    {
-        "role": "Sexta-feira",
-        "texto": "Senhor, como mencionei anteriormente, eu não consigo gerar relatórios semanais ou baseados em qualquer período de tempo. Minhas informações são fixas e se limitam às rotas e distâncias armazenadas.\n\nPosso ajudar com alguma consulta sobre as rotas ou distâncias que tenho no meu sistema?"
-    },
-    {
-        "role": "Usuário",
         "texto": "relatório dessa semana"
     },
     {
@@ -118,5 +110,13 @@
     {
         "role": "Sexta-feira",
         "texto": "OK"
+    },
+    {
+        "role": "Usuário",
+        "texto": "Diga apenas: ONLINE"
+    },
+    {
+        "role": "Sexta-feira",
+        "texto": "ONLINE"
     }
 ]

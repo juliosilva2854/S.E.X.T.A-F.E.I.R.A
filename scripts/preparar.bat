@@ -7,6 +7,16 @@ REM ============================================================
 setlocal
 cd /d "%~dp0.."
 
+echo === Verificando backend\.env ===
+if not exist "backend\.env" (
+  echo.
+  echo *** ATENCAO: backend\.env nao existe. Crie-o antes de continuar.
+  echo     Exemplo de variaveis esperadas: MONGO_URL, DB_NAME, CHAVE_GEMINI, etc.
+  echo.
+  pause
+  exit /b 1
+)
+
 echo === Backend: venv + dependencias ===
 cd backend
 if not exist "venv\Scripts\python.exe" python -m venv venv
@@ -16,8 +26,14 @@ python -m pip install -r requirements.txt
 cd ..
 
 echo.
-echo === Frontend: dependencias + build ===
+echo === Frontend: aponta para backend LOCAL no build ===
 cd frontend
+if not exist ".env.production.local" (
+  echo REACT_APP_BACKEND_URL=http://localhost:8001> .env.production.local
+  echo Criado frontend\.env.production.local apontando para http://localhost:8001
+)
+
+echo === Frontend: dependencias + build ===
 call yarn install
 call yarn build
 cd ..
