@@ -5,6 +5,7 @@
     "minute": 0,
     "period_days": 7,
     "send_whatsapp": false,
+    "whatsapp_destination_id": null,
     "last_run": "2026-06-03T23:55:11.074050",
     "history": [
         {
@@ -34,6 +35,31 @@
             "total_km": 201.0,
             "periodo": "2026-05-27 a 2026-06-03",
             "titulo": "Semana 27/05 a 03/06"
+        }
+    ],
+    "monthly_enabled": false,
+    "monthly_day": 1,
+    "monthly_hour": 8,
+    "monthly_minute": 0,
+    "monthly_send_whatsapp": false,
+    "monthly_whatsapp_destination_id": null,
+    "monthly_last_run": "2026-06-05T01:15:51.036227",
+    "monthly_history": [
+        {
+            "filename": "resumo_mensal_2026-05_20260605_010758.pdf",
+            "month": "2026-05",
+            "gerado_em": "2026-06-05T01:07:58.883732",
+            "total_atendimentos": 22,
+            "total_preventivas": 40,
+            "titulo": "Resumo Mensal 2026-05"
+        },
+        {
+            "filename": "resumo_mensal_2026-05_20260605_011551.pdf",
+            "month": "2026-05",
+            "gerado_em": "2026-06-05T01:15:51.036227",
+            "total_atendimentos": 22,
+            "total_preventivas": 40,
+            "titulo": "Resumo Mensal 2026-05"
         }
     ]
 }

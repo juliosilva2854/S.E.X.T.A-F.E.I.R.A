@@ -116,3 +116,31 @@ docker compose up -d
 | Mapa de calor vazio | Mongo não subiu | `net start MongoDB` |
 | Frontend chama URL errada | Build feito com `.env` errado | Apague `frontend\build` e `frontend\.env.production.local`, rode `preparar.bat` de novo |
 | Porta 8001/3000 ocupada | Outro processo | `netstat -ano \| findstr :8001` → `taskkill /f /pid <PID>` |
+
+## Wake-word — duas opções
+
+A Sexta-feira tem **duas formas** de ativação por voz, e elas são **complementares**:
+
+### A) Botão flutuante no painel (Web Speech API) — sempre disponível
+- No canto inferior direito do painel há um botão de microfone (laranja se desligado).
+- Clique para ativar. Diga "**Sexta-feira**" + comando (ex: "Sexta-feira, qual o clima hoje?").
+- Funciona em **Chrome ou Edge** (Web Speech API). Firefox/Safari não suportam.
+- A IA responde por voz (edge-tts neural, mesma usada no desktop loop).
+- Não exige nada instalado no PC além do navegador.
+
+### B) Loop de voz desktop (`sexta-feira.py`) — sempre ouvindo
+- Roda como processo separado (não via Opção B, é um terminal próprio).
+- Use quando quiser controlar o PC inteiro por voz (mouse, teclado, abrir apps, RPA).
+- Inicie com:
+  ```cmd
+  cd C:\caminho\para\sexta-feira
+  backend\venv\Scripts\activate.bat
+  python sexta-feira.py
+  ```
+- **Wake-word default = "hey jarvis"** (limitação do openwakeword). Para "sexta-feira"
+  você precisa treinar um modelo custom seguindo o guia em
+  https://github.com/dscripka/openWakeWord#training-new-models — depois aponte
+  `WAKE_WORD_MODEL=caminho/para/sexta-feira.tflite` no `backend\.env`.
+
+> Dica: deixe os dois rodando juntos. O painel é para quando você está no PC; o loop
+> desktop é para quando está com as mãos ocupadas em campo.

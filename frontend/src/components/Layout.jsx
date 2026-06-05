@@ -12,6 +12,7 @@ import {
   Eye,
   Clock,
   GoogleLogo,
+  WhatsappLogo,
   Lightbulb,
   Code,
   Translate,
@@ -26,6 +27,7 @@ import {
   Robot,
 } from "@phosphor-icons/react";
 import { api } from "../api";
+import WakeWord from "./WakeWord";
 
 const NAV = [
   { to: "/", label: "Overview", icon: Terminal, end: true },
@@ -47,6 +49,7 @@ const NAV = [
   { to: "/long-memory", label: "Memória Longa", icon: Lightbulb },
   { to: "/reminders", label: "Lembretes", icon: Clock },
   { to: "/google", label: "Google Hub", icon: GoogleLogo },
+  { to: "/whatsapp", label: "WhatsApp", icon: WhatsappLogo },
   { to: "/skills", label: "Skills", icon: Lightning },
   { to: "/logs", label: "Logs Stream", icon: ListBullets },
   { to: "/docs", label: "Documentação", icon: Book },
@@ -156,6 +159,7 @@ export default function Layout() {
           <Outlet context={{ status }} />
         </main>
       </div>
+      <WakeWord />
     </div>
   );
 }

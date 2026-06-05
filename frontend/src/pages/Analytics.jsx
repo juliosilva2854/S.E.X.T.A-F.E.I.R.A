@@ -47,6 +47,14 @@ export default function Analytics() {
   const [autoReports, setAutoReports] = useState([]);
   const [genBusy, setGenBusy] = useState(false);
 
+  // PDF custom + favoritos WhatsApp
+  const [pdfCatalog, setPdfCatalog] = useState(null);
+  const [showPdfModal, setShowPdfModal] = useState(false);
+  const [pdfSel, setPdfSel] = useState({ kpis: [], columns: [], sections: [] });
+  const [favorites, setFavorites] = useState([]);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareDest, setShareDest] = useState("");
+
   // refs do mapa
   const mapInstance = useRef(null);
   const heatRef = useRef(null);
@@ -174,6 +182,11 @@ export default function Analytics() {
   };
 
   const exportData = (format) => {
+    if (format === "pdf") {
+      // Abre modal de seleção de campos
+      openPdfModal();
+      return;
+    }
     const url = `${API}/analytics/export?${filterQS({ format, fuel_cost: fuelCost, km_per_liter: kmPerLiter })}`;
     const a = document.createElement("a");
     a.href = url; a.rel = "noopener";
@@ -181,7 +194,70 @@ export default function Analytics() {
     toast.success(`Exportando ${format.toUpperCase()}…`);
   };
 
+  const openPdfModal = async () => {
+    try {
+      if (!pdfCatalog) {
+        const { data } = await api.get("/analytics/pdf-fields");
+        setPdfCatalog(data);
+        // Tenta carregar preferência do localStorage
+        const saved = JSON.parse(localStorage.getItem("mavis_pdf_fields") || "null");
+        setPdfSel(saved || data.defaults);
+      }
+      setShowPdfModal(true);
+    } catch {
+      toast.error("Falha ao carregar opções do PDF");
+    }
+  };
+
+  const togglePdfItem = (group, key) => {
+    setPdfSel((prev) => {
+      const cur = new Set(prev[group] || []);
+      cur.has(key) ? cur.delete(key) : cur.add(key);
+      return { ...prev, [group]: Array.from(cur) };
+    });
+  };
+
+  const resetPdfSel = () => { if (pdfCatalog) setPdfSel(pdfCatalog.defaults); };
+
+  const downloadCustomPdf = async () => {
+    try {
+      localStorage.setItem("mavis_pdf_fields", JSON.stringify(pdfSel));
+      const res = await api.post("/analytics/export-pdf", {
+        start, end, unidade,
+        fuel_cost: fuelCost, km_per_liter: kmPerLiter,
+        fields: pdfSel,
+      }, { responseType: "blob" });
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement("a");
+      const stamp = new Date().toISOString().slice(0, 16).replace(/[-:T]/g, "");
+      a.href = url; a.download = `mavis_analytics_${stamp}.pdf`;
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+      setShowPdfModal(false);
+      toast.success("PDF gerado com os campos selecionados");
+    } catch {
+      toast.error("Falha ao gerar PDF");
+    }
+  };
+
   const shareWhatsApp = async (override = null, titulo = "") => {
+    // Carrega favoritos antes de abrir o modal
+    try {
+      if (favorites.length === 0) {
+        const { data } = await api.get("/whatsapp/favorites");
+        setFavorites(data || []);
+      }
+    } catch { /* segue mesmo sem favoritos */ }
+    setShareDest("");
+    setShowShareModal(true);
+    // Guarda contexto para usar quando o usuário clicar "Enviar"
+    setShareContext({ override, titulo });
+  };
+
+  const [shareContext, setShareContext] = useState({ override: null, titulo: "" });
+
+  const doShareWhatsApp = async () => {
+    const { override, titulo } = shareContext;
     try {
       const qs = filterQS({ fuel_cost: fuelCost, km_per_liter: kmPerLiter, ...(titulo ? { titulo } : {}) }, override);
       const { data } = await api.get(`/analytics/resumo?${qs}`);
@@ -190,9 +266,30 @@ export default function Analytics() {
       const a = document.createElement("a");
       a.href = pdfUrl; a.rel = "noopener";
       document.body.appendChild(a); a.click(); a.remove();
-      // abre o WhatsApp com o resumo pronto
+
+      // Se selecionou favorito, tenta o envio direto via backend (que detecta DESKTOP_MODE)
+      if (shareDest) {
+        try {
+          const send = await api.post("/whatsapp/send", { favorite_id: shareDest, message: data.texto });
+          if (send.data.sent) {
+            toast.success(`Resumo enviado para ${send.data.destino?.nome}. PDF baixado para anexar.`);
+            setShowShareModal(false);
+            return;
+          }
+          if (send.data.wa_url) {
+            // Modo hospedado: abre wa.me e mostra qual destino selecionar
+            window.open(send.data.wa_url, "_blank", "noopener");
+            toast.info(`Envio automático só funciona local. Selecione o destino "${send.data.destino?.nome}" e anexe o PDF.`);
+            setShowShareModal(false);
+            return;
+          }
+        } catch { /* cai no fallback wa.me genérico */ }
+      }
+
+      // Fallback: wa.me genérico (sem destino fixo)
       window.open(`https://wa.me/?text=${encodeURIComponent(data.texto)}`, "_blank", "noopener");
-      toast.success(`Resumo pronto! Escolha o grupo "${data.grupo || "WhatsApp"}" e anexe o PDF baixado.`);
+      toast.success("Resumo pronto! Escolha a conversa e anexe o PDF baixado.");
+      setShowShareModal(false);
     } catch {
       toast.error("Falha ao gerar o resumo");
     }
@@ -596,6 +693,117 @@ export default function Analytics() {
           </div>
         </div>
       )}
+
+      {/* MODAL PDF: SELEÇÃO DE CAMPOS */}
+      {showPdfModal && pdfCatalog && (
+        <div className="fixed inset-0 backdrop-blur-sm bg-black/80 z-[2000] flex items-center justify-center p-4"
+          onClick={() => setShowPdfModal(false)}>
+          <div onClick={(e) => e.stopPropagation()} data-testid="pdf-fields-modal"
+            className="bg-[#0A0A0A] border border-amber-500/50 rounded-lg shadow-[0_0_40px_rgba(245,158,11,0.15)] w-full max-w-3xl max-h-[90vh] overflow-auto">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#27272A] sticky top-0 bg-[#0A0A0A]">
+              <span className="text-lg font-bold text-amber-500 uppercase tracking-widest">Exportar PDF — escolha os campos</span>
+              <button onClick={() => setShowPdfModal(false)} className="text-gray-400 hover:text-amber-500"><X size={20} weight="bold" /></button>
+            </div>
+            <div className="p-6 space-y-5">
+              <FieldGroup title="Indicadores (KPIs)" items={pdfCatalog.kpis}
+                selected={pdfSel.kpis} onToggle={(k) => togglePdfItem("kpis", k)}
+                testidPrefix="pdf-kpi" />
+              <FieldGroup title="Colunas do diário" items={pdfCatalog.columns}
+                selected={pdfSel.columns} onToggle={(k) => togglePdfItem("columns", k)}
+                testidPrefix="pdf-col" />
+              <FieldGroup title="Seções extras" items={pdfCatalog.sections}
+                selected={pdfSel.sections} onToggle={(k) => togglePdfItem("sections", k)}
+                testidPrefix="pdf-sec" />
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-[#27272A]">
+                <button onClick={resetPdfSel} data-testid="pdf-reset-defaults"
+                  className="border border-[#27272A] text-gray-400 hover:text-amber-500 hover:border-amber-500 font-bold uppercase tracking-wider text-xs px-4 py-2 rounded transition-colors">
+                  RESTAURAR PADRÃO
+                </button>
+                <div className="flex gap-2">
+                  <button onClick={() => setShowPdfModal(false)} data-testid="pdf-cancel"
+                    className="border border-[#27272A] text-gray-400 hover:text-amber-500 hover:border-amber-500 font-bold uppercase tracking-wider text-xs px-4 py-2 rounded transition-colors">
+                    CANCELAR
+                  </button>
+                  <button onClick={downloadCustomPdf} data-testid="pdf-download"
+                    className="bg-amber-500 text-[#050505] hover:bg-amber-400 font-bold uppercase tracking-wider text-xs px-5 py-2 rounded inline-flex items-center gap-2 transition-colors">
+                    <FilePdf size={14} weight="bold" /> GERAR PDF
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL COMPARTILHAR WHATSAPP (com favoritos) */}
+      {showShareModal && (
+        <div className="fixed inset-0 backdrop-blur-sm bg-black/80 z-[2000] flex items-center justify-center p-4"
+          onClick={() => setShowShareModal(false)}>
+          <div onClick={(e) => e.stopPropagation()} data-testid="share-modal"
+            className="bg-[#0A0A0A] border border-amber-500/50 rounded-lg shadow-[0_0_40px_rgba(245,158,11,0.15)] w-full max-w-md">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#27272A]">
+              <span className="text-lg font-bold text-amber-500 uppercase tracking-widest flex items-center gap-2">
+                <WhatsappLogo size={18} weight="fill" /> Compartilhar
+              </span>
+              <button onClick={() => setShowShareModal(false)} className="text-gray-400 hover:text-amber-500"><X size={20} weight="bold" /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="text-[10px] uppercase tracking-widest text-gray-500 mb-1 block">Destino (opcional)</label>
+                <select data-testid="share-destination" value={shareDest}
+                  onChange={(e) => setShareDest(e.target.value)}
+                  className="w-full bg-[#050505] border border-[#27272A] text-gray-200 text-sm rounded px-3 py-2 focus:border-amber-500 focus:outline-none">
+                  <option value="">Sem destino fixo (abrir wa.me genérico)</option>
+                  {favorites.map((f) => (
+                    <option key={f.id} value={f.id}>[{f.tipo}] {f.display_name}</option>
+                  ))}
+                </select>
+                <p className="text-[10px] text-gray-600 mt-1">
+                  {favorites.length === 0
+                    ? "Nenhum favorito cadastrado. Acesse /whatsapp para adicionar."
+                    : "Se rodando local (DESKTOP_MODE=1), o envio é automático. No painel hospedado, abrimos o wa.me com o destino escolhido."}
+                </p>
+              </div>
+              <div className="flex justify-end gap-2">
+                <button onClick={() => setShowShareModal(false)} data-testid="share-cancel"
+                  className="border border-[#27272A] text-gray-400 hover:text-amber-500 hover:border-amber-500 font-bold uppercase tracking-wider text-xs px-4 py-2 rounded transition-colors">
+                  CANCELAR
+                </button>
+                <button onClick={doShareWhatsApp} data-testid="share-confirm"
+                  className="bg-[#25D366] text-[#052e16] hover:bg-[#22c55e] font-bold uppercase tracking-wider text-xs px-5 py-2 rounded inline-flex items-center gap-2 transition-colors">
+                  <WhatsappLogo size={14} weight="fill" /> COMPARTILHAR
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function FieldGroup({ title, items, selected, onToggle, testidPrefix }) {
+  const selSet = new Set(selected || []);
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-amber-500 text-[11px] tracking-widest uppercase font-bold">{title}</span>
+        <span className="text-gray-600 text-[10px] font-mono">{selSet.size}/{items.length}</span>
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-1.5">
+        {items.map((it) => (
+          <label key={it.key} data-testid={`${testidPrefix}-${it.key}`}
+            className={`flex items-center gap-2 px-3 py-1.5 border rounded cursor-pointer text-xs transition-colors ${
+              selSet.has(it.key)
+                ? "border-amber-500/50 bg-amber-500/10 text-amber-200"
+                : "border-[#27272A] text-gray-400 hover:border-amber-500/50"
+            }`}>
+            <input type="checkbox" className="w-3.5 h-3.5 accent-amber-500"
+              checked={selSet.has(it.key)} onChange={() => onToggle(it.key)} />
+            <span className="truncate">{it.label}</span>
+          </label>
+        ))}
+      </div>
     </div>
   );
 }

@@ -82,7 +82,9 @@ def send_message(contact: str, message: str) -> Dict[str, Any]:
         return {"ok": False, "error": str(e)}
     finally:
         try:
-            if ctx: ctx.close()
-            if p: p.stop()
+            if ctx:
+                ctx.close()
+            if p:
+                p.stop()
         except Exception:
             pass

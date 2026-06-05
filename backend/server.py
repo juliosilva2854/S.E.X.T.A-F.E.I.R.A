@@ -1272,6 +1272,219 @@ async def download_auto_report(filename: str):
 
 
 # ==============================================================
+# AUTO-REPORT MENSAL (macro, dia 1º 08h por padrão)
+# ==============================================================
+def _run_auto_monthly():
+    """Callback do scheduler: gera o resumo mensal macro (PDF + texto)."""
+    from mavis.skills import auto_report as ar
+    try:
+        res = ar.generate_monthly()
+        push_log("info", f"📅 Resumo mensal gerado: {res['filename']} "
+                         f"({res['total_atendimentos']} atend. · {res['total_preventivas']} prev. "
+                         f"· WhatsApp: {res['whatsapp']})", "analytics")
+        return res
+    except Exception as e:
+        push_log("error", f"Falha no resumo mensal: {e}", "analytics")
+        return {"error": str(e)}
+
+
+def _schedule_auto_monthly():
+    """(Re)agenda o job mensal conforme a config. Remove se desativado."""
+    from mavis.skills import auto_report as ar
+    cfg = ar.get_config()
+    sched_skill.remove_job("auto-report-monthly")
+    if cfg.get("monthly_enabled"):
+        sched_skill.schedule_recurring(ar.cron_expr_monthly(), _run_auto_monthly,
+                                       job_id="auto-report-monthly")
+        push_log("info", f"Resumo mensal ativo: dia {cfg['monthly_day']} às "
+                         f"{cfg['monthly_hour']:02d}:{cfg['monthly_minute']:02d}", "analytics")
+
+
+@api.get("/analytics/auto-monthly")
+async def get_auto_monthly():
+    from mavis.skills import auto_report as ar
+    cfg = ar.get_config()
+    jobs = [j for j in sched_skill.list_jobs() if j["id"] == "auto-report-monthly"]
+    return {
+        "config": cfg,
+        "next_run": jobs[0]["next_run"] if jobs else None,
+        "reports": ar.list_monthly_reports(),
+    }
+
+
+@api.post("/analytics/auto-monthly")
+async def set_auto_monthly(body: Dict[str, Any]):
+    from mavis.skills import auto_report as ar
+    cfg = ar.set_config(body or {})
+    _schedule_auto_monthly()
+    jobs = [j for j in sched_skill.list_jobs() if j["id"] == "auto-report-monthly"]
+    return {"config": cfg, "next_run": jobs[0]["next_run"] if jobs else None}
+
+
+class MonthlyRunRequest(BaseModel):
+    month: Optional[str] = None         # "YYYY-MM"; default = mês anterior fechado
+    destination_id: Optional[str] = None # favorito (sobrescreve config)
+
+
+@api.post("/analytics/auto-monthly/run-now")
+async def run_auto_monthly_now(body: Optional[MonthlyRunRequest] = None):
+    from mavis.skills import auto_report as ar
+    body = body or MonthlyRunRequest()
+    loop = asyncio.get_event_loop()
+    res = await loop.run_in_executor(None,
+                                     lambda: ar.generate_monthly(body.month, body.destination_id))
+    push_log("info", f"📅 Resumo mensal gerado manualmente: {res['filename']}", "analytics")
+    return res
+
+
+@api.get("/analytics/auto-monthly/download/{filename}")
+async def download_auto_monthly(filename: str):
+    from mavis.skills import auto_report as ar
+    p = ar.report_path(filename)
+    if not p.exists():
+        raise HTTPException(404, "relatório não encontrado")
+    return Response(content=p.read_bytes(), media_type="application/pdf",
+                    headers={"Content-Disposition": f'attachment; filename="{p.name}"'})
+
+
+@api.get("/analytics/monthly-macro")
+async def analytics_monthly_macro(month: str = ""):
+    """Retorna o macro de um mês (YYYY-MM). Sem `month`, usa o mês anterior fechado."""
+    from mavis.skills import analytics as an
+    if not month:
+        today = datetime.now()
+        first_of_this = today.replace(day=1)
+        last_day_prev = first_of_this - timedelta(days=1)
+        month = last_day_prev.strftime("%Y-%m")
+    return an.monthly_macro(month)
+
+
+# ==============================================================
+# WHATSAPP FAVORITOS (CRUD + envio com favorite_id)
+# ==============================================================
+class FavoriteIn(BaseModel):
+    nome: str
+    tipo: Optional[str] = "grupo"      # "grupo" | "contato"
+    display_name: Optional[str] = ""
+
+
+class FavoritePatch(BaseModel):
+    nome: Optional[str] = None
+    tipo: Optional[str] = None
+    display_name: Optional[str] = None
+
+
+class WhatsappSend(BaseModel):
+    message: str
+    favorite_id: Optional[str] = None
+    nome: Optional[str] = None         # alternativa: nome do contato/grupo
+
+
+@api.get("/whatsapp/favorites")
+async def whatsapp_list_favorites():
+    from mavis.skills import whatsapp_favorites as wf
+    return wf.list_all()
+
+
+@api.post("/whatsapp/favorites")
+async def whatsapp_add_favorite(body: FavoriteIn):
+    from mavis.skills import whatsapp_favorites as wf
+    try:
+        fav = wf.add(body.nome, body.tipo or "grupo", body.display_name or "")
+        push_log("info", f"WhatsApp favorito adicionado: {fav['display_name']} ({fav['tipo']})", "whatsapp")
+        return fav
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+
+@api.patch("/whatsapp/favorites/{fav_id}")
+async def whatsapp_update_favorite(fav_id: str, body: FavoritePatch):
+    from mavis.skills import whatsapp_favorites as wf
+    out = wf.update(fav_id, body.dict(exclude_none=True))
+    if not out:
+        raise HTTPException(404, "favorito não encontrado")
+    return out
+
+
+@api.delete("/whatsapp/favorites/{fav_id}")
+async def whatsapp_remove_favorite(fav_id: str):
+    from mavis.skills import whatsapp_favorites as wf
+    if not wf.remove(fav_id):
+        raise HTTPException(404, "favorito não encontrado")
+    return {"removed": True}
+
+
+@api.post("/whatsapp/send")
+async def whatsapp_send(body: WhatsappSend):
+    """Envia mensagem para favorito_id (preferido) ou nome livre.
+    Só executa o Playwright se DESKTOP_MODE=1. Caso contrário,
+    retorna o link wa.me + nome do destino (modo hospedado)."""
+    from mavis.skills import whatsapp_favorites as wf
+    dest = wf.resolve_destination(body.favorite_id, body.nome)
+    if not dest:
+        raise HTTPException(400, "destino inválido (informe favorite_id ou nome)")
+    if not body.message.strip():
+        raise HTTPException(400, "mensagem vazia")
+
+    if os.environ.get("DESKTOP_MODE") == "1":
+        from mavis.skills import whatsapp as wa
+        loop = asyncio.get_event_loop()
+        res = await loop.run_in_executor(None,
+                                         lambda: wa.send_message(dest["nome"], body.message))
+        push_log("info" if res.get("ok") else "error",
+                 f"WhatsApp → {dest['nome']}: {'ok' if res.get('ok') else res.get('error')}",
+                 "whatsapp")
+        return {"sent": bool(res.get("ok")), "destino": dest, **res}
+
+    # Modo hospedado: só devolve URL wa.me + texto (frontend abre)
+    import urllib.parse as _u
+    wa_url = f"https://wa.me/?text={_u.quote(body.message)}"
+    return {
+        "sent": False,
+        "desktop_only": True,
+        "destino": dest,
+        "wa_url": wa_url,
+        "message": ("Envio automático requer rodar localmente (DESKTOP_MODE=1). "
+                    "Use o link wa.me para selecionar a conversa manualmente."),
+    }
+
+
+# ==============================================================
+# PDF Fields catalog (para o modal de seleção)
+# ==============================================================
+@api.get("/analytics/pdf-fields")
+async def analytics_pdf_fields():
+    from mavis.skills import analytics_export as ex
+    return ex.pdf_fields_catalog()
+
+
+class PdfExportRequest(BaseModel):
+    start: Optional[str] = ""
+    end: Optional[str] = ""
+    unidade: Optional[str] = ""
+    fuel_cost: Optional[float] = 5.89
+    km_per_liter: Optional[float] = 10.0
+    fields: Optional[Dict[str, Any]] = None  # {kpis: [...], columns: [...], sections: [...]}
+
+
+@api.post("/analytics/export-pdf")
+async def analytics_export_pdf(body: PdfExportRequest):
+    """Versão POST do export PDF que aceita seleção de campos."""
+    from mavis.skills import analytics as an
+    from mavis.skills import analytics_export as ex
+    rows = an.export_rows(start=body.start or "", end=body.end or "", unidade=body.unidade or "")
+    kpis = an.kpis_filtered(start=body.start or "", end=body.end or "", unidade=body.unidade or "",
+                            fuel_cost_per_liter=body.fuel_cost or 5.89,
+                            km_per_liter=body.km_per_liter or 10.0)
+    pdf = ex.to_pdf(rows, kpis,
+                    filtro={"start": body.start, "end": body.end, "unidade": body.unidade},
+                    fields=body.fields)
+    ts = datetime.now().strftime("%Y%m%d_%H%M")
+    return Response(content=pdf, media_type="application/pdf",
+                    headers={"Content-Disposition": f'attachment; filename="mavis_analytics_{ts}.pdf"'})
+
+
+# ==============================================================
 # AGENT MODE (autônomo)
 # ==============================================================
 class AgentReq(BaseModel):
@@ -1499,6 +1712,11 @@ async def startup():
         _schedule_auto_report()
     except Exception as e:
         push_log("error", f"Falha ao agendar relatório automático: {e}", "system")
+    # Agenda o resumo mensal macro, se ativado
+    try:
+        _schedule_auto_monthly()
+    except Exception as e:
+        push_log("error", f"Falha ao agendar resumo mensal: {e}", "system")
 
 
 @app.on_event("shutdown")

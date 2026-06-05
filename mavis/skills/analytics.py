@@ -13,7 +13,7 @@ import re
 import unicodedata
 from datetime import datetime, timedelta
 from collections import defaultdict, Counter
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple, Optional
 
 from mavis.core.storage import read_json
 from mavis.core.paths import ARQUIVO_DB_ROTAS, ARQUIVO_RELATORIOS
@@ -400,7 +400,7 @@ def filtered_days(start: str = "", end: str = "", unidade: str = "") -> List[Dic
         if dt_end and dt > dt_end:
             continue
         if unorm:
-            locs_norm = [_normalize(l) for l in d.get("locations", [])]
+            locs_norm = [_normalize(loc) for loc in d.get("locations", [])]
             if not any(unorm in ln for ln in locs_norm):
                 continue
         out.append(d)
@@ -647,4 +647,116 @@ def month_detail(month_str: str) -> Dict[str, Any]:
         "top_equipamentos": [{"item": e, "qtd": c} for e, c in eq_counter.most_common(8)],
         "atividades": dict(act_counter),
         "days": days,
+    }
+
+
+# ==============================================================
+# MACRO MENSAL (visão executiva + comparativo)
+# ==============================================================
+def _prev_month_key(month_str: str) -> str:
+    """Retorna 'YYYY-MM' do mês anterior."""
+    y, m = month_str.split("-")
+    y, m = int(y), int(m)
+    pm = m - 1
+    py = y
+    if pm < 1:
+        pm = 12
+        py -= 1
+    return f"{py:04d}-{pm:02d}"
+
+
+def _aggregate_days(d_list: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Agrega métricas operacionais (sem foco em KM/combustível)."""
+    loc_counter: Counter = Counter()
+    eq_counter: Counter = Counter()
+    act_counter: Counter = Counter()
+    total_km = 0.0
+    for d in d_list:
+        total_km += d["km"]
+        for loc in d.get("locations", []):
+            loc_counter[loc] += 1
+        for e, c in (d.get("equipments") or {}).items():
+            eq_counter[e] += c
+        for a, c in (d.get("activities") or {}).items():
+            act_counter[a] += c
+    return {
+        "dias_uteis": len(d_list),
+        "visitas": sum(loc_counter.values()),
+        "preventivas": act_counter.get("manutencao_preventiva", 0),
+        "atendimentos": act_counter.get("atendimento_tecnico", 0),
+        "entregas": act_counter.get("entrega_insumos", 0),
+        "trocas": act_counter.get("troca_equipamento", 0),
+        "configuracoes": act_counter.get("configuracao", 0),
+        "top_unidades": [{"unidade": u, "visitas": c} for u, c in loc_counter.most_common(5)],
+        "top_equipamentos": [{"item": e, "qtd": c} for e, c in eq_counter.most_common(3)],
+        # KM total fica disponível para quem quiser, mas a narrativa macro NÃO foca nele.
+        "total_km": round(total_km, 1),
+    }
+
+
+def _delta_pct(atual: float, anterior: float) -> Optional[float]:
+    """Variação percentual. Retorna None se base = 0 (impossível medir)."""
+    if anterior == 0:
+        return None
+    return round((atual - anterior) / anterior * 100, 1)
+
+
+def monthly_macro(month_str: str) -> Dict[str, Any]:
+    """Estatísticas MACRO de um mês com comparativo vs mês anterior.
+
+    Foco: volume e tipo de OPERAÇÃO (atendimentos, preventivas, distribuição
+    entre unidades, equipamentos manuseados). NÃO foca em KM/combustível.
+
+    Estrutura:
+      {
+        "month": "YYYY-MM",
+        "previous_month": "YYYY-MM",
+        "current":   { dias_uteis, visitas, preventivas, atendimentos,
+                       entregas, trocas, configuracoes, top_unidades, top_equipamentos },
+        "previous":  { mesmas chaves },
+        "deltas":    { mesma estrutura mas em variação percentual (None se base 0) },
+        "tendencia_km_semana": [ { semana, km }, ... ],   # opcional, só pra gráfico
+        "concentracao_top3":   0.0..1.0,                  # quanto do total de visitas está no top3
+      }
+    """
+    parsed = parse_all()
+    days = _flat_days(parsed)
+
+    cur_days = [d for d in days if _month_key(_to_date(d["date"])) == month_str]
+    prev_month_str = _prev_month_key(month_str)
+    prev_days = [d for d in days if _month_key(_to_date(d["date"])) == prev_month_str]
+
+    cur = _aggregate_days(cur_days)
+    prev = _aggregate_days(prev_days)
+
+    deltas = {
+        "dias_uteis": _delta_pct(cur["dias_uteis"], prev["dias_uteis"]),
+        "visitas": _delta_pct(cur["visitas"], prev["visitas"]),
+        "preventivas": _delta_pct(cur["preventivas"], prev["preventivas"]),
+        "atendimentos": _delta_pct(cur["atendimentos"], prev["atendimentos"]),
+        "entregas": _delta_pct(cur["entregas"], prev["entregas"]),
+        "trocas": _delta_pct(cur["trocas"], prev["trocas"]),
+        "configuracoes": _delta_pct(cur["configuracoes"], prev["configuracoes"]),
+    }
+
+    # Tendência KM por semana (apenas para gráfico opcional)
+    by_week_km: Dict[str, float] = defaultdict(float)
+    for d in cur_days:
+        wk = _week_key(_to_date(d["date"]))
+        by_week_km[wk] += d["km"]
+    tendencia_km_semana = [{"semana": wk, "km": round(km, 1)}
+                           for wk, km in sorted(by_week_km.items())]
+
+    # Concentração: % das visitas em top3
+    top3 = cur.get("top_unidades", [])[:3]
+    concentracao_top3 = (sum(u["visitas"] for u in top3) / cur["visitas"]) if cur["visitas"] else 0.0
+
+    return {
+        "month": month_str,
+        "previous_month": prev_month_str,
+        "current": cur,
+        "previous": prev,
+        "deltas": deltas,
+        "tendencia_km_semana": tendencia_km_semana,
+        "concentracao_top3": round(concentracao_top3, 3),
     }

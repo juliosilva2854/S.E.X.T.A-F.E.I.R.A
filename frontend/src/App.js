@@ -25,6 +25,7 @@ import Analytics from "./pages/Analytics";
 import Commands from "./pages/Commands";
 import Docs from "./pages/Docs";
 import Agent from "./pages/Agent";
+import Whatsapp from "./pages/Whatsapp";
 
 export default function App() {
   return (
@@ -64,6 +65,7 @@ export default function App() {
           <Route path="/long-memory" element={<LongMemory />} />
           <Route path="/reminders" element={<Reminders />} />
           <Route path="/google" element={<GoogleHub />} />
+          <Route path="/whatsapp" element={<Whatsapp />} />
           <Route path="/skills" element={<Skills />} />
           <Route path="/logs" element={<Logs />} />
           <Route path="/settings" element={<Settings />} />
