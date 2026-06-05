@@ -1,5 +1,5 @@
 {
-    "enabled": true,
+    "enabled": false,
     "day_of_week": "fri",
     "hour": 18,
     "minute": 0,
