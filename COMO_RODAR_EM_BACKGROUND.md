@@ -23,46 +23,39 @@ Sem terminal aberto, sem prompt. Os scripts prontos estão em `scripts\`:
 
 | Arquivo | Função |
 |---|---|
-| `scripts\preparar.bat` | Cria o venv do backend, instala dependências, gera o build do frontend (aponta para `http://localhost:8001`). Rode UMA vez. |
-| `scripts\iniciar_oculto.vbs` | Lança MongoDB + backend (uvicorn :8001) + frontend (serve :3000) **sem janela visível** e abre o navegador depois de 6s. |
-| `scripts\registrar_inicializacao.bat` | Registra a tarefa no **Agendador de Tarefas** para rodar o VBS ao fazer logon. |
+| `scripts\rodar_tudo.bat` | **🚀 LIGAR TUDO** num clique. Detecta se já preparou (se não, prepara). Sobe Mongo + backend + frontend ocultos, espera responder e abre o navegador. |
+| `scripts\parar_tudo.bat` | **🛑 PARAR TUDO** num clique. Mata o backend (porta 8001) e o frontend (porta 3000). MongoDB continua rodando (é serviço). |
+| `scripts\preparar.bat` | Roda só na primeira vez (o `rodar_tudo.bat` chama sozinho se precisar). Cria o venv do backend, instala deps Python + Node, gera o build do frontend apontando para `http://localhost:8001`. |
+| `scripts\iniciar_oculto.vbs` | Usado internamente pelo `rodar_tudo.bat` e pela tarefa agendada. Lança Mongo + uvicorn :8001 + serve :3000 **sem janela visível**. |
+| `scripts\registrar_inicializacao.bat` | (Opcional) Registra uma tarefa no **Agendador de Tarefas** para o `iniciar_oculto.vbs` rodar ao fazer logon. |
 
-### Passo a passo
+### Uso diário — 1 clique
 
-1. **Abra o `cmd` na pasta do projeto** (`cd C:\caminho\para\sexta-feira`).
-2. **Prepare o ambiente** (uma vez só):
-   ```cmd
-   scripts\preparar.bat
-   ```
-   Isso cria `backend\venv`, instala todas as deps Python + Node, e roda `yarn build` apontando
-   para `http://localhost:8001` (criado automaticamente em `frontend\.env.production.local`).
+```cmd
+scripts\rodar_tudo.bat       :: liga tudo e abre o navegador
+scripts\parar_tudo.bat       :: para tudo
+```
 
-3. **Teste agora, sem reiniciar**:
-   ```cmd
-   wscript scripts\iniciar_oculto.vbs
-   ```
-   Em ~6s o navegador abre em `http://localhost:3000` mostrando o painel.
-   Cheque o status `[ONLINE]` no canto superior direito.
+Na **primeira vez**, o `rodar_tudo.bat` automaticamente roda o `preparar.bat` (venv + deps + build).
+Pode demorar uns minutos. Da segunda vez em diante sobe em ~10 segundos.
 
-4. **Registre para iniciar sozinho** (rode como **Administrador**):
-   ```cmd
-   scripts\registrar_inicializacao.bat
-   ```
-   A partir de agora, toda vez que você logar no Windows a Sexta-feira sobe sozinha,
-   sem terminal, e o painel fica em `http://localhost:3000`.
+### Auto-start no logon (opcional)
 
-### Comandos úteis (após registrar)
+Se quiser que a Sexta-feira ligue sozinha toda vez que você logar no Windows, **uma vez só**
+rode como **Administrador**:
+
+```cmd
+scripts\registrar_inicializacao.bat
+```
+
+A partir daí, a cada logon sobe sozinha sem terminal nenhum.
+
+### Comandos úteis
 
 ```cmd
 schtasks /run    /tn "SextaFeira"     :: inicia agora sem reiniciar
 schtasks /query  /tn "SextaFeira"     :: ver status da tarefa
 schtasks /delete /tn "SextaFeira" /f  :: remover a inicializacao automatica
-```
-
-Para parar tudo manualmente:
-```cmd
-taskkill /f /im python.exe   & :: mata o uvicorn
-taskkill /f /im node.exe     & :: mata o serve
 ```
 
 ---
