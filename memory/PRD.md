@@ -13,7 +13,7 @@ Redesign premium (tema escuro + âmbar, estilo "terminal/control room"), garanti
 - Dados: arquivos JSON em /app (banco_de_dados.json = 267 rotas, banco_relatorios.json = 5 relatórios) + cache de geocoding
 
 ## URL de acesso (preview)
-https://route-insights-5.preview.emergentagent.com  → página: /analytics
+https://chat-system-core.preview.emergentagent.com  → página: /analytics
 
 ## O que foi feito
 

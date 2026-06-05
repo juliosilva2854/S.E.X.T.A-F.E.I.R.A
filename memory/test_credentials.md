@@ -1,7 +1,7 @@
 # Sexta-feira (Mavis) — Test credentials
 
 ## App / Preview
-- URL preview: https://route-insights-5.preview.emergentagent.com
+- URL preview: https://chat-system-core.preview.emergentagent.com
 - Página principal da tarefa: /analytics (PÚBLICA — sem login)
 
 ## Login Field Control (usado pelo RPA desktop — NÃO é login do app)
