@@ -1,70 +1,6 @@
 [
     {
         "role": "Usuário",
-        "texto": "relatório dessa semana"
-    },
-    {
-        "role": "Sexta-feira",
-        "texto": "Senhor, eu não possuo a capacidade de criar relatórios semanais ou de qualquer período. Minhas funções são restritas à consulta das rotas e distâncias que estão armazenadas no meu banco de dados.\n\nO senhor gostaria de consultar alguma rota ou distância específica que esteja no meu sistema?"
-    },
-    {
-        "role": "Usuário",
-        "texto": "qual a distancia de casa para box?"
-    },
-    {
-        "role": "Sexta-feira",
-        "texto": "Senhor, a distância de CASA para BOX é de 35 KM."
-    },
-    {
-        "role": "Usuário",
-        "texto": "qual a distancia de casa para box?"
-    },
-    {
-        "role": "Sexta-feira",
-        "texto": "Senhor, a distância de CASA para BOX é de 35 KM."
-    },
-    {
-        "role": "Usuário",
-        "texto": "qual a distancia de casa pra box?"
-    },
-    {
-        "role": "Sexta-feira",
-        "texto": "Senhor, a distância de CASA para BOX é de 35 KM."
-    },
-    {
-        "role": "Usuário",
-        "texto": "olá, tudo bem?"
-    },
-    {
-        "role": "Sexta-feira",
-        "texto": "Senhor, estou operacional. Em que posso auxiliá-lo?"
-    },
-    {
-        "role": "Usuário",
-        "texto": "qual a distancia entre upa pedreira e casa?"
-    },
-    {
-        "role": "Sexta-feira",
-        "texto": "Senhor, a distância de UPA PEDREIRA para CASA é de 25 KM."
-    },
-    {
-        "role": "Usuário",
-        "texto": "qual a distancia de casa pra box?"
-    },
-    {
-        "role": "Sexta-feira",
-        "texto": "Senhor, a distância de CASA para BOX é de 35 KM."
-    },
-    {
-        "role": "Usuário",
-        "texto": "olá, tudo bem?"
-    },
-    {
-        "role": "Sexta-feira",
-        "texto": "Senhor, estou operacional. Em que posso auxiliá-lo?"
-    },
-    {
-        "role": "Usuário",
         "texto": "qual a distancia entre upa pedreira e casa?"
     },
     {
@@ -118,5 +54,69 @@
     {
         "role": "Sexta-feira",
         "texto": "ONLINE"
+    },
+    {
+        "role": "Usuário",
+        "texto": "teste"
+    },
+    {
+        "role": "Sexta-feira",
+        "texto": "Senhor, estou operacional. Em que posso auxiliá-lo?"
+    },
+    {
+        "role": "Usuário",
+        "texto": "terça-feira"
+    },
+    {
+        "role": "Sexta-feira",
+        "texto": "Terça-feira, Julio? O que você quer saber desse dia?"
+    },
+    {
+        "role": "Usuário",
+        "texto": "qual é o dia de amanha, o dia de hoje e o feriado"
+    },
+    {
+        "role": "Sexta-feira",
+        "texto": "Chefe, hoje é quinta-feira, 4 de junho. Amanhã é sexta-feira, 5 de junho. Feriados? Se o senhor souber de algum, me avise. Para o senhor, Julio, imagino que qualquer dia sem chamados seja um feriado."
+    },
+    {
+        "role": "Usuário",
+        "texto": "mavis"
+    },
+    {
+        "role": "Sexta-feira",
+        "texto": "Mavis? Chefe, creio que não sou eu. O que posso fazer pelo senhor, Julio?"
+    },
+    {
+        "role": "Usuário",
+        "texto": "me gere o relatorio mensal de maio"
+    },
+    {
+        "role": "Sexta-feira",
+        "texto": "Relatório mensal de maio, chefe? Certo. É para já. Não prometo que será emocionante, mas será um relatório."
+    },
+    {
+        "role": "Usuário",
+        "texto": "chat, envie o relatorio da semana passada para geovanna amor no whatsapp"
+    },
+    {
+        "role": "Sexta-feira",
+        "texto": "Entendido, chefe. Relatório da semana passada para a Geovanna no WhatsApp, a caminho. Espero que ela goste do seu trabalho, Julio."
+    },
+    {
+        "role": "Usuário",
+        "texto": "gerar relatório da semana passada"
+    },
+    {
+        "role": "Sexta-feira",
+        "texto": "Gerando o relatório da semana passada, chefe. A vida de técnico da ToLife exige documentação, não é?"
+    },
+    {
+        "role": "Usuário",
+        "texto": "atualizar planilha"
+    },
+    {
+        "role": "Sexta-feira",
+        "texto": "Planilha atualizada, chefe. Que emoção indescritível deve ser manter tudo em ordem, não é, Julio?"
     }
 ]

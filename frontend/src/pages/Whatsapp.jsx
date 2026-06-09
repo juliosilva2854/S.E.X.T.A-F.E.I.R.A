@@ -59,18 +59,16 @@ export default function Whatsapp() {
     if (!sendForm.message.trim()) { toast.error("Mensagem vazia"); return; }
     setSending(true);
     try {
+      // Faz o pedido diretamente para o novo backend Python (que comunica com o WAHA)
       const { data } = await api.post("/whatsapp/send", sendForm);
-      if (data.sent) {
-        toast.success(`Enviado para ${data.destino?.nome}`);
-      } else if (data.wa_url) {
-        // Modo hospedado: abre o wa.me
-        window.open(data.wa_url, "_blank");
-        toast.info("Envio automático só funciona local. Abri o wa.me para você anexar manualmente.");
+
+      if (data.sent || data.ok) {
+        toast.success(`Enviado com sucesso!`);
+        setShowSend(false);
+        setSendForm({ favorite_id: "", message: "" });
       } else {
-        toast.error(data.message || "Falha no envio");
+        toast.error(data.error || data.message || "Falha no envio");
       }
-      setShowSend(false);
-      setSendForm({ favorite_id: "", message: "" });
     } catch (e) {
       toast.error(e?.response?.data?.detail || "Falha ao enviar");
     } finally {
@@ -124,9 +122,8 @@ export default function Whatsapp() {
             de destino nos resumos semanal/mensal e no botão "Compartilhar" do Analytics.
           </p>
           <p>
-            <span className="text-amber">// DESKTOP:</span> o envio automático via Playwright
-            só funciona quando o app está rodando no seu PC (DESKTOP_MODE=1). No painel
-            hospedado, o sistema gera o link <code>wa.me</code> para você abrir e anexar.
+            <span className="text-amber">// BACKGROUND API:</span> o sistema agora utiliza
+            o WAHA em segundo plano. Os envios são instantâneos e invisíveis.
           </p>
         </div>
 

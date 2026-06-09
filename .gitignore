@@ -1,30 +1,50 @@
-# Arquivos sensíveis
+# 1. Arquivos Sensíveis e Credenciais
 credenciais.json
 .env
 *.env
 backend/.env
 frontend/.env
+google_token.json
+config.py
+banco_relatorios.json
+memory/test_credentials.md
 
-# Python
-__pycache__/
-*.pyc
-*.pyo
+# 2. Bancos de Dados, Logs e Memória Local
+banco_de_dados.json
+memoria_mavis.json
+long_memory.json
+quick_notes.json
+reminders.json
+todos.json
+whatsapp_favoritos.json
+workflows.json
+geocode_cache.json
+pomodoro_log.json
+auto_report_config.json
+design_guidelines.json
+
+# 3. Modelos de Voz e Áudio (Arquivos Pesados)
+model/
 *.mp3
 resposta.mp3
 
-# Sessões locais
-sessao_whatsapp/Default/Cache/
-sessao_whatsapp/Default/Code Cache/
-sessao_whatsapp/Default/Service Worker/
-sessao_whatsapp/Default/IndexedDB/
-sessao_whatsapp/Default/Session Storage/
-sessao_whatsapp/Default/Local Storage/
+# 4. Sessões e Relatórios
+sessao_whatsapp/
+relatorios_gerados/
+test_reports/
 
-# Node
+# 5. Python
+__pycache__/
+*.pyc
+*.pyo
+backend/venv/
+venv/
+env/
+
+# 6. Node / Frontend
 node_modules/
 build/
 .next/
-.env.*
 credentials.json
 *.pem
 *.key

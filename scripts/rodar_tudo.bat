@@ -12,14 +12,15 @@ set BASE=%CD%
 
 echo === Sexta-feira (Mavis) === iniciando ===
 
-REM 1) Verifica preparacao previa
+REM 1) Verifica preparacao previa e se o modelo de voz ja foi baixado
 if not exist "backend\venv\Scripts\python.exe" goto :preparar
 if not exist "frontend\build\index.html" goto :preparar
+if not exist "model\final.mdl" goto :preparar
 goto :iniciar
 
 :preparar
 echo.
-echo *** Primeira execucao detectada. Preparando ambiente (venv + deps + build)...
+echo *** Dependencias ou modelo ausentes. Iniciando Preparacao do ambiente...
 echo *** Isso pode demorar alguns minutos.
 echo.
 call "%~dp0preparar.bat"
@@ -37,6 +38,8 @@ if not exist "backend\.env" (
   pause
   exit /b 1
 )
+
+REM (Continue o seu script normalmente a partir daqui com os passos 3, 4, 5...)
 
 REM 3) Para qualquer instancia anterior (evita "porta ocupada")
 echo.

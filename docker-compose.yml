@@ -30,5 +30,25 @@ services:
     ports:
       - "3000:3000"
 
+  waha:
+    image: devlikeapro/waha
+    container_name: mavis_waha
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    environment:
+      - WHATSAPP_DEFAULT_ENGINE=WEBJS
+      # Credenciais para a Interface Visual (Dashboard)
+      - WAHA_DASHBOARD_USERNAME=admin
+      - WAHA_DASHBOARD_PASSWORD=9f6a294729664563a80c0ffcdd23502f
+      # Credenciais para a Documentação (Swagger)
+      - WHATSAPP_SWAGGER_USERNAME=admin
+      - WHATSAPP_SWAGGER_PASSWORD=9f6a294729664563a80c0ffcdd23502f
+      # Chave de API (Opcional, mas recomendada se seu backend usar)
+      - WAHA_API_KEY=mavis123
+    volumes:
+      - waha_data:/app/.waha
+
 volumes:
   mongo_data: {}
+  waha_data: {}   

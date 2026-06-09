@@ -5,5 +5,19 @@
         "tipo": "grupo",
         "display_name": "Grupo ToLife (resumos)",
         "criado_em": "2026-06-05T01:07:48.371716"
+    },
+    {
+        "id": "5e28eb20-554f-4430-a16f-d74bb20f9f9f",
+        "nome": "Geovanna Amor ❤️",
+        "tipo": "contato",
+        "display_name": "Amor",
+        "criado_em": "2026-06-04T23:50:11.206114"
+    },
+    {
+        "id": "9277ab97-b964-4374-a96b-32d7a8f80d88",
+        "nome": "Mãe",
+        "tipo": "contato",
+        "display_name": "Mãe",
+        "criado_em": "2026-06-07T18:44:40.089313"
     }
 ]

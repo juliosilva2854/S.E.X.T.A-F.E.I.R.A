@@ -2,6 +2,7 @@
 REM ============================================================
 REM  Sexta-feira (Mavis) - PREPARACAO (rode UMA vez)
 REM  Cria o venv do backend, instala dependencias e gera o build do frontend.
+REM  Baixa os modelos de voz pesados via Google Drive.
 REM  Pre-requisitos: Python 3.11+, Node.js + Yarn, MongoDB instalados.
 REM ============================================================
 setlocal
@@ -23,6 +24,10 @@ if not exist "venv\Scripts\python.exe" python -m venv venv
 call venv\Scripts\activate.bat
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
+
+echo.
+echo === Baixando Modelo de Voz (Google Drive) ===
+python ..\scripts\gerenciar_modelo.py
 cd ..
 
 echo.

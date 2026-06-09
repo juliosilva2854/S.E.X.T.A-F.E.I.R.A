@@ -41,9 +41,9 @@
     "monthly_day": 1,
     "monthly_hour": 8,
     "monthly_minute": 0,
-    "monthly_send_whatsapp": false,
+    "monthly_send_whatsapp": true,
     "monthly_whatsapp_destination_id": null,
-    "monthly_last_run": "2026-06-05T01:15:51.036227",
+    "monthly_last_run": "2026-06-07T18:44:19.371765",
     "monthly_history": [
         {
             "filename": "resumo_mensal_2026-05_20260605_010758.pdf",
@@ -57,6 +57,46 @@
             "filename": "resumo_mensal_2026-05_20260605_011551.pdf",
             "month": "2026-05",
             "gerado_em": "2026-06-05T01:15:51.036227",
+            "total_atendimentos": 22,
+            "total_preventivas": 40,
+            "titulo": "Resumo Mensal 2026-05"
+        },
+        {
+            "filename": "resumo_mensal_2026-05_20260604_230229.pdf",
+            "month": "2026-05",
+            "gerado_em": "2026-06-04T23:02:29.906594",
+            "total_atendimentos": 22,
+            "total_preventivas": 40,
+            "titulo": "Resumo Mensal 2026-05"
+        },
+        {
+            "filename": "resumo_mensal_11111-01_20260604_230253.pdf",
+            "month": "11111-01",
+            "gerado_em": "2026-06-04T23:02:53.604127",
+            "total_atendimentos": 0,
+            "total_preventivas": 0,
+            "titulo": "Resumo Mensal 11111-01"
+        },
+        {
+            "filename": "resumo_mensal_2026-05_20260605_004111.pdf",
+            "month": "2026-05",
+            "gerado_em": "2026-06-05T00:41:11.302963",
+            "total_atendimentos": 22,
+            "total_preventivas": 40,
+            "titulo": "Resumo Mensal 2026-05"
+        },
+        {
+            "filename": "resumo_mensal_2026-05_20260605_020915.pdf",
+            "month": "2026-05",
+            "gerado_em": "2026-06-05T02:09:15.992226",
+            "total_atendimentos": 22,
+            "total_preventivas": 40,
+            "titulo": "Resumo Mensal 2026-05"
+        },
+        {
+            "filename": "resumo_mensal_2026-05_20260607_184419.pdf",
+            "month": "2026-05",
+            "gerado_em": "2026-06-07T18:44:19.371765",
             "total_atendimentos": 22,
             "total_preventivas": 40,
             "titulo": "Resumo Mensal 2026-05"

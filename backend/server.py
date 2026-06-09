@@ -195,12 +195,19 @@ async def status():
 async def _execute_skill(intent: str, raw_text: str) -> Dict[str, Any]:
     """Executa skill server-side. Skills desktop-only retornam {desktop_only: True}."""
     try:
-        if intent in ("computer.open_app", "computer.close_app", "computer.screenshot",
-                      "computer.type_text", "system.shutdown", "system.lock",
-                      "media.play", "media.pause", "media.next",
-                      "whatsapp.read_unread", "whatsapp.send",
-                      "vision.read_screen", "route.legacy"):
-            return {"desktop_only": True, "message": "Operação requer execução no app desktop."}
+        if intent == "whatsapp.send":
+            extracted = brain_core.smart_extract(
+                raw_text, 
+                'Schema: {"contato": str, "mensagem": str}. Extraia o nome do destinatário e o texto a ser enviado.'
+            )
+            if not extracted.get("contato") or not extracted.get("mensagem"):
+                return {"error": "Falta contato ou mensagem."}
+            from mavis.skills import whatsapp as wa
+            return {"data": wa.send_message(extracted["contato"], extracted["mensagem"])}
+
+        if intent == "whatsapp.read_unread":
+            from mavis.skills import whatsapp as wa
+            return {"data": wa.list_unread()}
 
         if intent == "system.battery":
             return {"data": sys_skill.battery()}
@@ -1416,38 +1423,25 @@ async def whatsapp_remove_favorite(fav_id: str):
 
 @api.post("/whatsapp/send")
 async def whatsapp_send(body: WhatsappSend):
-    """Envia mensagem para favorito_id (preferido) ou nome livre.
-    Só executa o Playwright se DESKTOP_MODE=1. Caso contrário,
-    retorna o link wa.me + nome do destino (modo hospedado)."""
+    """Envia mensagem via WAHA (invisível e instantâneo)."""
     from mavis.skills import whatsapp_favorites as wf
+    from mavis.skills import whatsapp as wa
+    
     dest = wf.resolve_destination(body.favorite_id, body.nome)
     if not dest:
         raise HTTPException(400, "destino inválido (informe favorite_id ou nome)")
     if not body.message.strip():
         raise HTTPException(400, "mensagem vazia")
 
-    if os.environ.get("DESKTOP_MODE") == "1":
-        from mavis.skills import whatsapp as wa
-        loop = asyncio.get_event_loop()
-        res = await loop.run_in_executor(None,
-                                         lambda: wa.send_message(dest["nome"], body.message))
-        push_log("info" if res.get("ok") else "error",
-                 f"WhatsApp → {dest['nome']}: {'ok' if res.get('ok') else res.get('error')}",
-                 "whatsapp")
-        return {"sent": bool(res.get("ok")), "destino": dest, **res}
-
-    # Modo hospedado: só devolve URL wa.me + texto (frontend abre)
-    import urllib.parse as _u
-    wa_url = f"https://wa.me/?text={_u.quote(body.message)}"
-    return {
-        "sent": False,
-        "desktop_only": True,
-        "destino": dest,
-        "wa_url": wa_url,
-        "message": ("Envio automático requer rodar localmente (DESKTOP_MODE=1). "
-                    "Use o link wa.me para selecionar a conversa manualmente."),
-    }
-
+    # Envia direto para o nosso novo código, sem checar DESKTOP_MODE
+    loop = asyncio.get_event_loop()
+    res = await loop.run_in_executor(None, lambda: wa.send_message(dest["nome"], body.message))
+    
+    push_log("info" if res.get("ok") else "error",
+             f"WhatsApp → {dest['nome']}: {'ok' if res.get('ok') else res.get('error')}",
+             "whatsapp")
+             
+    return {"sent": bool(res.get("ok")), "destino": dest, **res}
 
 # ==============================================================
 # PDF Fields catalog (para o modal de seleção)
@@ -1468,20 +1462,37 @@ class PdfExportRequest(BaseModel):
 
 
 @api.post("/analytics/export-pdf")
-async def analytics_export_pdf(body: PdfExportRequest):
-    """Versão POST do export PDF que aceita seleção de campos."""
+async def analytics_export_pdf(body: PdfExportRequest, send_to_id: Optional[str] = None):
     from mavis.skills import analytics as an
     from mavis.skills import analytics_export as ex
+    from mavis.skills import whatsapp_favorites as wf
+    from mavis.skills import whatsapp as wa
+    
+    # Gera o PDF
     rows = an.export_rows(start=body.start or "", end=body.end or "", unidade=body.unidade or "")
     kpis = an.kpis_filtered(start=body.start or "", end=body.end or "", unidade=body.unidade or "",
                             fuel_cost_per_liter=body.fuel_cost or 5.89,
                             km_per_liter=body.km_per_liter or 10.0)
-    pdf = ex.to_pdf(rows, kpis,
-                    filtro={"start": body.start, "end": body.end, "unidade": body.unidade},
-                    fields=body.fields)
+    pdf_bytes = ex.to_pdf(rows, kpis,
+                          filtro={"start": body.start, "end": body.end, "unidade": body.unidade},
+                          fields=body.fields)
     ts = datetime.now().strftime("%Y%m%d_%H%M")
-    return Response(content=pdf, media_type="application/pdf",
-                    headers={"Content-Disposition": f'attachment; filename="mavis_analytics_{ts}.pdf"'})
+    filename = f"mavis_analytics_{ts}.pdf"
+
+    # Se um destino (favorite_id) foi enviado, enviamos via WAHA
+    if send_to_id:
+        dest = wf.resolve_destination(send_to_id, None)
+        if not dest:
+            raise HTTPException(400, "Destino não encontrado")
+        
+        wa_res = wa.send_file(dest["nome"], pdf_bytes, filename)
+        if not wa_res.get("ok"):
+            raise HTTPException(500, f"Erro ao enviar via WAHA: {wa_res.get('error')}")
+        return {"ok": True, "message": f"Enviado para {dest['display_name']}"}
+
+    # Caso contrário, comportamento padrão (download)
+    return Response(content=pdf_bytes, media_type="application/pdf",
+                    headers={"Content-Disposition": f'attachment; filename="{filename}"'})
 
 
 # ==============================================================
