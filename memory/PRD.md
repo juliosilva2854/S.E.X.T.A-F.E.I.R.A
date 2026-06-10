@@ -18,6 +18,21 @@ https://repo-analyzer-243.preview.emergentagent.com
 
 ## O que foi feito
 
+### 09/06/2026 — Migração WhatsApp para WAHA + Script único
+- **WAHA é a API oficial agora** (Playwright aposentado). `mavis/skills/whatsapp.py` lê
+  `WAHA_URL`, `WAHA_API_KEY`, `WAHA_SESSION` do `.env`; bug do `formatar_numero` ausente
+  em `send_file()` corrigido.
+- **Removido gate `DESKTOP_MODE=1`** em `auto_report.py` (semanal + mensal). Envios
+  de WhatsApp do painel funcionam tanto local quanto hospedado.
+- **Novos endpoints**: `GET /api/whatsapp/status` e `GET /api/whatsapp/unread`.
+- **UI**: badge live do status WAHA (verde/vermelho) + botão "atualizar" na página `/whatsapp`.
+- **Bug fix Analytics.jsx**: removido código órfão de `wa.me` que quebrava o build após
+  refatoração WAHA do commit `f0542f9`.
+- **Script único `scripts/iniciar_tudo.bat`**: orquestra Docker Desktop + container WAHA
+  (`docker compose up -d waha`) + MongoDB + backend (uvicorn :8001) + frontend (serve :3000)
+  + `sexta-feira.py` (loop de voz/wake-word), tudo em background via VBS atualizado.
+  `scripts/parar_tudo.bat` agora também para o container WAHA e o processo `sexta-feira.py`.
+
 ### 03/06/2026 — Analytics + Restauração .env
 - Página `/analytics` completa (KPIs, mapa de calor Leaflet, CSV/XLSX/PDF, filtros, modal mensal,
   botão Compartilhar WhatsApp). 18 testes pytest backend passando.
@@ -63,8 +78,9 @@ https://repo-analyzer-243.preview.emergentagent.com
 
 ## Observações
 - **CHAVE_GEMINI ATIVA** no preview · chat respondendo em ~1.7s
+- **WAHA (devlikeapro/waha)** roda em container Docker na porta 3001 com sessão `default`
 - **Restrições**: `pydantic-core==2.23.4`, `tzlocal/pytz`, cache geocoding, Leaflet vanilla (não react-leaflet)
-- **Desktop-only** (precisa DESKTOP_MODE=1): RPA Field Control, envio automático WhatsApp via Playwright
+- **Desktop-only**: RPA Field Control (Playwright legado em `relatorios.py`/`rotinas.py`). WhatsApp NÃO é mais desktop-only — vai 100% via WAHA.
 
 ## Backlog
 - P1: Refatorar `Analytics.jsx` (852 linhas) em subcomponentes (KpiGrid, HeatmapMap, FilterPanel, PdfFieldsModal, ShareModal)

@@ -36,7 +36,7 @@ python sexta-feira.py
 
 ## 3. Configuração — backend/.env
 
-Editável pelo painel em **Configuração → Editor .ENV** (15 campos):
+Editável pelo painel em **Configuração → Editor .ENV** (18 campos):
 
 ```
 CHAVE_GEMINI=AIzaSy...
@@ -55,11 +55,14 @@ FIELDCONTROL_SENHA=...
 WHATSAPP_NUMERO=5511...
 WHATSAPP_GRUPO=...
 PLANILHA_NOME=...
+WAHA_URL=http://localhost:3001    # WhatsApp HTTP API (devlikeapro/waha)
+WAHA_API_KEY=mavis123             # X-Api-Key dos requests
+WAHA_SESSION=default              # nome da sessão WhatsApp
 ```
 
 Backup automático em `.env.bak` antes de cada save pelo painel.
 
-## 4. Páginas do Painel (23 áreas)
+## 4. Páginas do Painel (24 áreas)
 
 | Rota | Função |
 |---|---|
@@ -176,10 +179,30 @@ Tudo em `/app/*.json`. Backup = zip. Restore = colar de volta + restart backend.
 | `portaudio.h not found` | Linux `sudo apt install portaudio19-dev` |
 | TTS 403 | `pip install -U edge-tts` (>= 7.0) |
 | Rate limit Gemini | Free tier 5 req/min, aguarde 60s |
-| WhatsApp não abre | `playwright install chromium` + escanear QR uma vez |
+| WAHA `OFFLINE` no painel | `docker compose up -d waha` e escaneie o QR em `http://localhost:3001` (dashboard `admin / ver docker-compose.yml`) |
 | Painel OFFLINE | Verifique `sudo supervisorctl status` e logs |
 | Voz não toca | Permitir áudio do site no browser |
 | Agent plano vazio | Gemini retornou JSON inválido — meta mais clara |
+
+## 13. WhatsApp via WAHA (NOVO em v4.4)
+
+WhatsApp agora roda 100% por **WAHA** (devlikeapro/waha) em background — sem Playwright, sem janela aberta. Configurado em `docker-compose.yml`:
+
+```bash
+docker compose up -d waha          # sobe o container na porta 3001
+# 1ª vez: abre http://localhost:3001, faz login admin/<senha do compose>,
+#         clica "Start" na sessão default e escaneia o QR no celular
+```
+
+Endpoints do painel que falam com o WAHA:
+- `GET  /api/whatsapp/status`     → estado da sessão (WORKING, STARTING, STOPPED…)
+- `GET  /api/whatsapp/unread`     → chats com mensagens não-lidas
+- `POST /api/whatsapp/send`       → envio de texto por nome/grupo/favorito
+- `POST /api/analytics/export-pdf` (com `send_to_id`) → envia o PDF macro pelo WAHA
+
+Variáveis em `backend/.env`: `WAHA_URL`, `WAHA_API_KEY`, `WAHA_SESSION`.
+
+O envio dos **auto-resumos semanal e mensal** vai automaticamente pelo WAHA quando você marcar "send_whatsapp" no auto_report_config (não precisa mais de `DESKTOP_MODE=1`).
 
 ## 12. Estrutura de pastas
 

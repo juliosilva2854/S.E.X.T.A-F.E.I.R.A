@@ -289,14 +289,8 @@ export default function Analytics() {
     }
   };
 
-  // Fallback: wa.me genérico (sem destino fixo)
-  window.open(`https://wa.me/?text=${encodeURIComponent(data.texto)}`, "_blank", "noopener");
-  toast.success("Resumo pronto! Escolha a conversa e anexe o PDF baixado.");
-  setShowShareModal(false);
-} catch {
-  toast.error("Falha ao gerar o resumo");
-}
-  };
+  // Fallback removido: envio agora 100% via WAHA (acima)
+  // (linhas legadas wa.me apagadas após migração)
 
 const clearFilters = () => {
   setStart(""); setEnd(""); setUnidade("");

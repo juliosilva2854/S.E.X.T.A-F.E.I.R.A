@@ -13,6 +13,8 @@ export default function Whatsapp() {
   const [sendForm, setSendForm] = useState({ favorite_id: "", message: "" });
   const [sending, setSending] = useState(false);
 
+  const [wahaStatus, setWahaStatus] = useState(null);
+
   const load = async () => {
     setLoading(true);
     try {
@@ -25,7 +27,16 @@ export default function Whatsapp() {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  const refreshStatus = async () => {
+    try {
+      const { data } = await api.get("/whatsapp/status");
+      setWahaStatus(data);
+    } catch {
+      setWahaStatus({ connected: false, status: "OFFLINE" });
+    }
+  };
+
+  useEffect(() => { load(); refreshStatus(); }, []);
 
   const add = async () => {
     if (!form.nome.trim()) {
@@ -119,12 +130,30 @@ export default function Whatsapp() {
             <span className="text-amber">// COMO FUNCIONA:</span> cadastre aqui os contatos
             e grupos que você usa para receber resumos. O <b>nome</b> deve bater EXATAMENTE
             com o que aparece na busca do WhatsApp Web. Os favoritos aparecerão no dropdown
-            de destino nos resumos semanal/mensal e no botão "Compartilhar" do Analytics.
+            de destino nos resumos semanal/mensal e no botão &quot;Compartilhar&quot; do Analytics.
           </p>
           <p>
             <span className="text-amber">// BACKGROUND API:</span> o sistema agora utiliza
             o WAHA em segundo plano. Os envios são instantâneos e invisíveis.
           </p>
+          <div className="mt-3 flex items-center gap-2" data-testid="waha-status-badge">
+            <span className={`inline-block w-2 h-2 rounded-full ${wahaStatus?.connected ? "bg-emerald-500" : "bg-rose-500"}`}></span>
+            <span className="text-zinc-400">
+              WAHA: <b className={wahaStatus?.connected ? "text-emerald-400" : "text-rose-400"}>
+                {wahaStatus?.connected ? "CONECTADO" : (wahaStatus?.status || "OFFLINE")}
+              </b>
+              {wahaStatus?.session ? ` · sessão ${wahaStatus.session}` : ""}
+              {wahaStatus?.url ? ` · ${wahaStatus.url}` : ""}
+            </span>
+            <button
+              type="button"
+              onClick={refreshStatus}
+              data-testid="waha-status-refresh"
+              className="ml-1 text-zinc-500 hover:text-amber text-[10px] uppercase tracking-wider border border-zinc-800 hover:border-amber/50 px-2 py-0.5 rounded transition-colors"
+            >
+              atualizar
+            </button>
+          </div>
         </div>
 
         {loading ? (

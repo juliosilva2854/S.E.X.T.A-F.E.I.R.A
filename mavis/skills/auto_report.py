@@ -220,7 +220,7 @@ def generate_and_store(period_days: Optional[int] = None, titulo: str = "",
     write_json(CONFIG_FILE, cfg)
 
     whatsapp_status = "skip"
-    if cfg.get("send_whatsapp") and os.environ.get("DESKTOP_MODE") == "1":
+    if cfg.get("send_whatsapp"):
         dest = _resolve_whatsapp_destination(
             cfg.get("whatsapp_destination_id"),
             os.environ.get("WHATSAPP_GRUPO", ""),
@@ -231,7 +231,7 @@ def generate_and_store(period_days: Optional[int] = None, titulo: str = "",
 
 
 def _try_send_whatsapp(texto: str, destino: Optional[str]) -> str:
-    """Envio via skill desktop. Só funciona com DESKTOP_MODE=1 + destino válido."""
+    """Envio via WAHA (invisível e em background)."""
     if not destino:
         return "sem_destino"
     try:
@@ -391,7 +391,7 @@ def generate_monthly(month_str: Optional[str] = None,
     write_json(CONFIG_FILE, cfg)
 
     whatsapp_status = "skip"
-    if (destination_id or cfg.get("monthly_send_whatsapp")) and os.environ.get("DESKTOP_MODE") == "1":
+    if destination_id or cfg.get("monthly_send_whatsapp"):
         dest = _resolve_whatsapp_destination(
             destination_id or cfg.get("monthly_whatsapp_destination_id"),
             os.environ.get("WHATSAPP_GRUPO", ""),

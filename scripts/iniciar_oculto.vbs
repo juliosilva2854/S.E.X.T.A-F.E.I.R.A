@@ -1,8 +1,10 @@
 ' ============================================================
-'  Sexta-feira (Mavis) - LANCADOR OCULTO (sem janela)
-'  Inicia MongoDB (se for servico), Backend (uvicorn :8001) e
-'  Frontend (serve build :3000) totalmente em segundo plano.
-'  Usado pelo Agendador de Tarefas (ao fazer logon) - Opcao B.
+'  Sexta-feira (MAVIS) - LANCADOR OCULTO COMPLETO
+'  Sobe em background, sem janela visivel:
+'    - Backend FastAPI (uvicorn :8001)
+'    - Frontend (serve build :3000)
+'    - sexta-feira.py (loop de voz / wake-word)
+'  WAHA, Docker e MongoDB sao tratados pelo iniciar_tudo.bat.
 ' ============================================================
 Option Explicit
 Dim sh, fso, base, backend, frontend, py
@@ -15,21 +17,22 @@ base     = fso.GetParentFolderName(fso.GetParentFolderName(WScript.ScriptFullNam
 backend  = base & "\backend"
 frontend = base & "\frontend"
 
-' Caminho do python do venv (cai para o python global se nao existir venv)
+' Caminho do Python do venv (cai para o python global se nao existir venv)
 py = backend & "\venv\Scripts\python.exe"
 If Not fso.FileExists(py) Then py = "python"
 
-' 1) MongoDB como servico (ignora erro silenciosamente se nao existir)
-sh.Run "cmd /c net start MongoDB", 0, False
-
-' 2) Backend FastAPI (DESKTOP_MODE=1 habilita RPA/WhatsApp via navegador visivel)
+' 1) Backend FastAPI (sem DESKTOP_MODE — WhatsApp agora roda 100% via WAHA)
 sh.CurrentDirectory = backend
-sh.Run "cmd /c set DESKTOP_MODE=1 && """ & py & """ -m uvicorn server:app --host 0.0.0.0 --port 8001", 0, False
+sh.Run "cmd /c """ & py & """ -m uvicorn server:app --host 0.0.0.0 --port 8001", 0, False
 
-' 3) Frontend (build estatico). Requer 'serve' (npx baixa se faltar).
+' 2) Frontend (build estatico)
 sh.CurrentDirectory = frontend
 sh.Run "cmd /c npx serve -s build -l 3000", 0, False
 
-' 4) Abre o navegador apos 6s
-WScript.Sleep 6000
+' 3) sexta-feira.py — loop de voz com wake-word, oculto
+sh.CurrentDirectory = base
+sh.Run "cmd /c """ & py & """ """ & base & "\sexta-feira.py""", 0, False
+
+' 4) Abre o navegador apos 8s (da tempo do backend subir)
+WScript.Sleep 8000
 sh.Run "http://localhost:3000", 1, False

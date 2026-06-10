@@ -1443,6 +1443,22 @@ async def whatsapp_send(body: WhatsappSend):
              
     return {"sent": bool(res.get("ok")), "destino": dest, **res}
 
+
+@api.get("/whatsapp/status")
+async def whatsapp_status():
+    """Status atual da sessão WAHA (conectado/desconectado, engine, URL)."""
+    from mavis.skills import whatsapp as wa
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, wa.status)
+
+
+@api.get("/whatsapp/unread")
+async def whatsapp_unread(limit: int = 10):
+    """Lista chats com mensagens não-lidas via WAHA."""
+    from mavis.skills import whatsapp as wa
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, lambda: wa.list_unread(limit))
+
 # ==============================================================
 # PDF Fields catalog (para o modal de seleção)
 # ==============================================================
