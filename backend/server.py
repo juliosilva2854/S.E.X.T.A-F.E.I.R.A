@@ -1578,6 +1578,75 @@ async def sheets_rows(start: str = "", end: str = "", unidade: str = "", limit: 
     rows = gs.get_rows(start=start, end=end, unidade=unidade)
     return {"total": len(rows), "rows": rows[-limit:]}
 
+
+def _run_auto_sheets_sync():
+    """Job APScheduler: roda sync_all e loga resultado."""
+    try:
+        from mavis.skills import google_sheets as gs
+        res = gs.sync_all()
+        if res.get("ok"):
+            push_log("info",
+                     f"AUTO-SHEETS > sync: {res.get('total_rows', 0)} linhas em "
+                     f"{len(res.get('abas', []))} abas",
+                     "sheets")
+        else:
+            push_log("error", f"AUTO-SHEETS > falha: {res.get('error')}", "sheets")
+    except Exception as e:  # pragma: no cover
+        push_log("error", f"AUTO-SHEETS > exceção: {e}", "sheets")
+
+
+def _schedule_auto_sheets_sync():
+    """Agenda sync diário do Sheets (default: 7h). Controle via env:
+       MAVIS_SHEETS_AUTOSYNC=1       (liga)
+       MAVIS_SHEETS_AUTOSYNC_HOUR=7  (hora)
+    """
+    if os.environ.get("MAVIS_SHEETS_AUTOSYNC", "0") != "1":
+        return
+    try:
+        hour = int(os.environ.get("MAVIS_SHEETS_AUTOSYNC_HOUR", "7"))
+    except ValueError:
+        hour = 7
+    sched_skill.schedule_recurring(
+        {"hour": hour, "minute": 0},
+        _run_auto_sheets_sync,
+        job_id="sheets-autosync-daily",
+    )
+
+
+@api.post("/sheets/autosync/toggle")
+async def sheets_autosync_toggle(enabled: bool, hour: Optional[int] = None):
+    """Liga/desliga o sync automático diário do Sheets em runtime.
+
+    Persiste no .env via env_manager (para sobreviver ao restart).
+    """
+    from mavis.skills import env_manager as em
+    patch = {"MAVIS_SHEETS_AUTOSYNC": "1" if enabled else "0"}
+    if hour is not None:
+        patch["MAVIS_SHEETS_AUTOSYNC_HOUR"] = str(int(hour))
+    em.update_env(patch)
+    # Aplica em memória
+    os.environ["MAVIS_SHEETS_AUTOSYNC"] = patch["MAVIS_SHEETS_AUTOSYNC"]
+    if hour is not None:
+        os.environ["MAVIS_SHEETS_AUTOSYNC_HOUR"] = patch["MAVIS_SHEETS_AUTOSYNC_HOUR"]
+    # Remove job antigo e re-agenda
+    sched_skill.remove_job("sheets-autosync-daily")
+    _schedule_auto_sheets_sync()
+    jobs = [j for j in sched_skill.list_jobs() if j["id"] == "sheets-autosync-daily"]
+    return {"enabled": enabled, "hour": int(os.environ.get("MAVIS_SHEETS_AUTOSYNC_HOUR", "7")),
+            "next_run": jobs[0]["next_run"] if jobs else None}
+
+
+@api.get("/sheets/autosync")
+async def sheets_autosync_status():
+    enabled = os.environ.get("MAVIS_SHEETS_AUTOSYNC", "0") == "1"
+    try:
+        hour = int(os.environ.get("MAVIS_SHEETS_AUTOSYNC_HOUR", "7"))
+    except ValueError:
+        hour = 7
+    jobs = [j for j in sched_skill.list_jobs() if j["id"] == "sheets-autosync-daily"]
+    return {"enabled": enabled, "hour": hour,
+            "next_run": jobs[0]["next_run"] if jobs else None}
+
 # ==============================================================
 # PDF Fields catalog (para o modal de seleção)
 # ==============================================================
@@ -1863,6 +1932,11 @@ async def startup():
         _schedule_auto_monthly()
     except Exception as e:
         push_log("error", f"Falha ao agendar resumo mensal: {e}", "system")
+    # Agenda o auto-sync diário do Google Sheets, se ativado
+    try:
+        _schedule_auto_sheets_sync()
+    except Exception as e:
+        push_log("error", f"Falha ao agendar auto-sync do Sheets: {e}", "system")
 
 
 @app.on_event("shutdown")

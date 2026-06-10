@@ -12,6 +12,8 @@ import {
   FileCsv, FileXls, FilePdf, FunnelSimple, X, Path, Truck, Wrench as WrenchIcon, WhatsappLogo,
 } from "@phosphor-icons/react";
 import { toast } from "sonner";
+import { KPI, Panel, Field, ExportBtn, FieldGroup } from "../components/analytics/widgets";
+import KpiGrid from "../components/analytics/KpiGrid";
 
 const AMBER = "#F59E0B";
 const COLORS = ["#F59E0B", "#D97706", "#B45309", "#92400E", "#78350F", "#FBBF24", "#FCD34D", "#FEF3C7"];
@@ -58,6 +60,7 @@ export default function Analytics() {
   // Google Sheets sync
   const [sheetsStatus, setSheetsStatus] = useState(null);
   const [sheetsSyncBusy, setSheetsSyncBusy] = useState(false);
+  const [sheetsAuto, setSheetsAuto] = useState(null);
 
   // refs do mapa
   const mapInstance = useRef(null);
@@ -133,6 +136,24 @@ export default function Analytics() {
       const { data } = await api.get("/sheets/status");
       setSheetsStatus(data);
     } catch { setSheetsStatus({ configured: false }); }
+    try {
+      const { data } = await api.get("/sheets/autosync");
+      setSheetsAuto(data);
+    } catch { setSheetsAuto({ enabled: false, hour: 7 }); }
+  };
+
+  const toggleAutoSync = async (enabled, hour) => {
+    try {
+      const params = new URLSearchParams({ enabled: String(enabled) });
+      if (hour !== undefined && hour !== null) params.set("hour", String(hour));
+      const { data } = await api.post(`/sheets/autosync/toggle?${params.toString()}`);
+      setSheetsAuto(data);
+      toast.success(data.enabled
+        ? `Auto-sync ativo: todo dia às ${data.hour}h00`
+        : "Auto-sync desativado");
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || "Falha ao alterar auto-sync");
+    }
   };
 
   const syncSheets = async () => {
@@ -341,13 +362,32 @@ return (
               // KM · DESTINOS · COMBUSTÍVEL · MAPA DE CALOR
           </p>
           {sheetsStatus && (
-            <p data-testid="sheets-source-label" className="text-[10px] text-gray-500 mt-1">
-              FONTE:{" "}
-              <span className={sheetsStatus.configured ? "text-emerald-400" : "text-amber-500"}>
-                {sheetsStatus.configured
-                  ? `Google Sheets (${sheetsStatus.total_rows} linhas · sync ${sheetsStatus.last_sync ? new Date(sheetsStatus.last_sync).toLocaleString("pt-BR") : "—"})`
-                  : "Relatórios narrativos (Sheets ainda não sincronizado)"}
+            <p data-testid="sheets-source-label" className="text-[10px] text-gray-500 mt-1 flex items-center gap-2 flex-wrap">
+              <span>
+                FONTE:{" "}
+                <span className={sheetsStatus.configured ? "text-emerald-400" : "text-amber-500"}>
+                  {sheetsStatus.configured
+                    ? `Google Sheets (${sheetsStatus.total_rows} linhas · sync ${sheetsStatus.last_sync ? new Date(sheetsStatus.last_sync).toLocaleString("pt-BR") : "—"})`
+                    : "Relatórios narrativos (Sheets ainda não sincronizado)"}
+                </span>
               </span>
+              {sheetsAuto && (
+                <button
+                  type="button"
+                  data-testid="sheets-autosync-toggle"
+                  onClick={() => toggleAutoSync(!sheetsAuto.enabled, sheetsAuto.hour)}
+                  className={`text-[9px] uppercase tracking-wider px-2 py-0.5 rounded border transition-colors ${
+                    sheetsAuto.enabled
+                      ? "border-emerald-500/60 text-emerald-400 hover:bg-emerald-500/10"
+                      : "border-zinc-700 text-zinc-500 hover:border-amber-500/50 hover:text-amber-400"
+                  }`}
+                  title={sheetsAuto.enabled
+                    ? `Auto-sync diário ativo às ${sheetsAuto.hour}h. Próx: ${sheetsAuto.next_run || "—"}`
+                    : "Clique para ativar sync diário"}
+                >
+                  AUTO-SYNC: {sheetsAuto.enabled ? `${sheetsAuto.hour}h` : "OFF"}
+                </button>
+              )}
             </p>
           )}
         </div>
@@ -420,21 +460,7 @@ return (
       {kpis && (
         <>
           {/* KPI CARDS */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            <KPI testid="kpi-total-km" icon={Gauge} label="Total KM" value={kpis.total_km} accent />
-            <KPI testid="kpi-dias" icon={CalendarBlank} label="Dias úteis" value={kpis.total_dias} />
-            <KPI icon={Path} label="Média KM/dia" value={kpis.media_km_dia} />
-            <KPI icon={ChartLine} label="Média KM/semana" value={kpis.media_km_semana} />
-            <KPI icon={GasPump} label="Litros" value={kpis.litros_estimados} sub={`${kmPerLiter} km/L`} />
-            <KPI testid="kpi-custo" icon={Fire} label="Combustível R$"
-              value={kpis.custo_combustivel.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} accent />
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <KPI icon={WrenchIcon} label="Preventivas" value={kpis.total_preventivas} />
-            <KPI icon={Wrench} label="Atendimentos téc." value={kpis.total_atendimentos} />
-            <KPI icon={Truck} label="Entregas insumos" value={kpis.total_entregas_insumos} />
-            <KPI icon={ArrowsClockwise} label="Trocas equip." value={kpis.total_trocas_equipamentos} />
-          </div>
+          <KpiGrid kpis={kpis} kmPerLiter={kmPerLiter} />
 
           {/* MAPA DE CALOR GEOGRÁFICO */}
           <div className="bg-[#0A0A0A] border border-[#27272A] rounded-lg overflow-hidden transition-all hover:border-amber-500/40">
@@ -824,72 +850,4 @@ return (
     )}
   </div>
 );
-}
-
-function FieldGroup({ title, items, selected, onToggle, testidPrefix }) {
-  const selSet = new Set(selected || []);
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-amber-500 text-[11px] tracking-widest uppercase font-bold">{title}</span>
-        <span className="text-gray-600 text-[10px] font-mono">{selSet.size}/{items.length}</span>
-      </div>
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-1.5">
-        {items.map((it) => (
-          <label key={it.key} data-testid={`${testidPrefix}-${it.key}`}
-            className={`flex items-center gap-2 px-3 py-1.5 border rounded cursor-pointer text-xs transition-colors ${selSet.has(it.key)
-              ? "border-amber-500/50 bg-amber-500/10 text-amber-200"
-              : "border-[#27272A] text-gray-400 hover:border-amber-500/50"
-              }`}>
-            <input type="checkbox" className="w-3.5 h-3.5 accent-amber-500"
-              checked={selSet.has(it.key)} onChange={() => onToggle(it.key)} />
-            <span className="truncate">{it.label}</span>
-          </label>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function Field({ label, children }) {
-  return (
-    <div className="flex flex-col">
-      <label className="text-[10px] uppercase tracking-widest text-gray-500 mb-1">{label}</label>
-      {children}
-    </div>
-  );
-}
-
-function ExportBtn({ icon: Icon, label, onClick, testid }) {
-  return (
-    <button onClick={onClick} data-testid={testid}
-      className="inline-flex items-center gap-1.5 border border-amber-500/40 text-amber-500 hover:bg-amber-500/10 hover:border-amber-500 font-bold uppercase tracking-wider text-xs px-3 py-2 rounded transition-colors">
-      <Icon size={14} weight="bold" /> {label}
-    </button>
-  );
-}
-
-function Panel({ title, right, children, className = "" }) {
-  return (
-    <div className={`bg-[#0A0A0A] border border-[#27272A] rounded-lg transition-all hover:border-amber-500/40 ${className}`}>
-      <div className="flex items-center justify-between px-5 py-3 border-b border-[#27272A]">
-        <span className="text-amber-500 text-xs uppercase tracking-[0.2em] font-bold">{title}</span>
-        {right && <span className="text-gray-500 text-[11px] font-mono">{right}</span>}
-      </div>
-      {children}
-    </div>
-  );
-}
-
-function KPI({ icon: Icon, label, value, sub, accent, testid }) {
-  return (
-    <div data-testid={testid}
-      className="bg-[#0A0A0A] border border-[#27272A] rounded-lg p-5 transition-all duration-300 hover:border-amber-500/50 hover:shadow-[0_0_20px_rgba(245,158,11,0.1)]">
-      <div className="text-[10px] tracking-[0.15em] text-gray-500 uppercase flex items-center gap-2">
-        {Icon && <Icon size={13} className="text-amber-500" weight="bold" />} {label}
-      </div>
-      <div className={`font-display text-3xl md:text-4xl font-black tracking-tighter mt-2 ${accent ? "text-amber-500" : "text-gray-50"}`}>{value}</div>
-      {sub && <div className="text-gray-600 text-[10px] mt-1 font-mono">{sub}</div>}
-    </div>
-  );
 }

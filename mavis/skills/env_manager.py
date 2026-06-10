@@ -27,6 +27,11 @@ EDITABLE = {
     "WHATSAPP_NUMERO":        {"sensitive": False, "label": "WhatsApp número"},
     "WHATSAPP_GRUPO":         {"sensitive": False, "label": "WhatsApp grupo"},
     "PLANILHA_NOME":          {"sensitive": False, "label": "Nome da planilha Google"},
+    "WAHA_URL":               {"sensitive": False, "label": "URL do WAHA"},
+    "WAHA_API_KEY":           {"sensitive": True,  "label": "API Key do WAHA"},
+    "WAHA_SESSION":           {"sensitive": False, "label": "Sessão WAHA"},
+    "MAVIS_SHEETS_AUTOSYNC":      {"sensitive": False, "label": "Auto-sync Sheets (1/0)"},
+    "MAVIS_SHEETS_AUTOSYNC_HOUR": {"sensitive": False, "label": "Hora auto-sync Sheets (0-23)"},
 }
 
 
@@ -86,3 +91,7 @@ def update(patch: Dict[str, str]) -> Dict[str, Any]:
     lines = [f"{k}={v}" for k, v in raw.items()]
     ENV_FILE.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return {"ok": True, "updated_keys": list(patch.keys())}
+
+
+# Alias para chamadas a partir do server.py
+update_env = update
