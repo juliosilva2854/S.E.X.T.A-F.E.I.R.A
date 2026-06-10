@@ -18,6 +18,15 @@ https://repo-analyzer-243.preview.emergentagent.com
 
 ## O que foi feito
 
+### 10/06/2026 (parte 2) — Backlog: auto-sync Sheets + refactor Analytics
+- **P3 Auto-sync diário do Google Sheets**: APScheduler agenda `google_sheets.sync_all()` em horário configurável (default 7h). Endpoints `GET /api/sheets/autosync` + `POST /api/sheets/autosync/toggle?enabled=true&hour=7` (persiste em `.env` via `env_manager` + aplica em memória sem restart). UI: badge `AUTO-SYNC: 7h/OFF` clicável no header do Analytics.
+- **P1 Refactor Analytics.jsx em subcomponentes**:
+  - Novo `/app/frontend/src/components/analytics/widgets.jsx` (98 LOC) — exporta `KPI`, `Panel`, `Field`, `ExportBtn`, `FieldGroup`
+  - Novo `/app/frontend/src/components/analytics/KpiGrid.jsx` (43 LOC) — encapsula os 2 grids de KPI (10 cards: KM total, dias, médias, litros, custo, preventivas, atendimentos, entregas, trocas)
+  - `Analytics.jsx`: **934 → 853 LOC** (≈9% redução); todos os widgets reutilizáveis em outras telas
+- **`env_manager` expandido**: whitelist agora cobre `WAHA_URL/API_KEY/SESSION` + `MAVIS_SHEETS_AUTOSYNC[_HOUR]`. Alias `update_env = update` para compat.
+- **Chave Gemini atualizada**: usuário forneceu `AQ.Ab8RN6JYKR16RXkawCujSDzORmf4DKfPsPGIs4NpQIRZi82x8w` — formato OAuth/Vertex AI, **não é API key padrão Gemini** (deveria ser `AIzaSy...`). Endpoint Gemini retorna 401 UNAUTHENTICATED. Aplicada no `.env` mas precisa ser substituída.
+
 ### 10/06/2026 — Chat executa comandos + Google Sheets como fonte do Analytics
 - **Chat Neural EXECUTA** comandos operacionais ao invés de só responder:
   - "sincroniza/sync planilha" → `mavis.skills.google_sheets.sync_all()` (manual, on-demand)
