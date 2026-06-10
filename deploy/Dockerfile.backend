@@ -10,7 +10,10 @@ RUN apt-get update \
 
 # Dependências primeiro (cache de camada)
 COPY backend/requirements.txt /app/backend/requirements.txt
-RUN pip install -r /app/backend/requirements.txt
+# Remove pacotes internos da Emergent (não usados pelo código) para build 100% público/offline-Emergent
+RUN grep -viE 'emergentintegrations|customer-assets\.emergentagent\.com|^[[:space:]]*litellm([[:space:]]|=|@|$)' \
+        /app/backend/requirements.txt > /tmp/requirements.clean.txt \
+    && pip install -r /tmp/requirements.clean.txt
 
 # Código
 COPY backend /app/backend

@@ -7,3 +7,7 @@ frontend/build
 .emergent
 backend/.env
 deploy/backend.env
+model.zip
+*.zip
+kb_docs
+*.md
