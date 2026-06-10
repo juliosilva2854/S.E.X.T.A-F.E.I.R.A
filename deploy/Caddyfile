@@ -1,0 +1,13 @@
+# HTTPS automático (Let's Encrypt). Requer DNS apontando para o servidor + portas 80/443 abertas.
+{$DOMAIN:ia.sconnecta.com.br} {
+	encode gzip
+
+	# API + WebSocket de logs vão para o backend
+	@api path /api/*
+	reverse_proxy @api backend:8001
+
+	# SPA React (qualquer outra rota cai no index.html)
+	root * /srv
+	try_files {path} /index.html
+	file_server
+}

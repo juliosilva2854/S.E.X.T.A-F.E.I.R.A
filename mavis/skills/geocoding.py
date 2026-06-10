@@ -18,9 +18,9 @@ from typing import Optional, Tuple, Dict, Any
 
 import requests
 
-from mavis.core.paths import APP_ROOT
+from mavis.core.paths import DATA_DIR
 
-CACHE_FILE = Path(APP_ROOT) / "geocode_cache.json"
+CACHE_FILE = Path(DATA_DIR) / "geocode_cache.json"
 NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
 USER_AGENT = "MavisSextaFeira/3.0 (analytics dashboard)"
 RATE_LIMIT_SECONDS = 1.1  # Nominatim pede 1 req/s

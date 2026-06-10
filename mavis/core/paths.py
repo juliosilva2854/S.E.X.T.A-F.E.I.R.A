@@ -5,7 +5,8 @@ import os
 from pathlib import Path
 
 APP_ROOT = Path(__file__).resolve().parent.parent.parent
-DATA_DIR = APP_ROOT
+# Diretório de dados (JSON). Em produção/nuvem aponte MAVIS_DATA_DIR para um volume persistente.
+DATA_DIR = Path(os.environ.get("MAVIS_DATA_DIR", str(APP_ROOT)))
 
 ARQUIVO_MEMORIA = os.environ.get("ARQUIVO_MEMORIA", str(DATA_DIR / "memoria_mavis.json"))
 ARQUIVO_DB_ROTAS = os.environ.get("ARQUIVO_DB", str(DATA_DIR / "banco_de_dados.json"))

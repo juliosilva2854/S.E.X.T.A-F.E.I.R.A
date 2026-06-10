@@ -1,0 +1,9 @@
+.git
+**/node_modules
+**/__pycache__
+**/*.pyc
+frontend/build
+*.log
+.emergent
+backend/.env
+deploy/backend.env

@@ -1,0 +1,46 @@
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+
+  backend:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.backend
+    restart: unless-stopped
+    env_file:
+      - ./backend.env
+    environment:
+      MONGO_URL: mongodb://mongo:27017
+      MAVIS_DATA_DIR: /data
+    depends_on:
+      - mongo
+    volumes:
+      - mavis_data:/data
+
+  web:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.frontend
+      args:
+        # Troque se usar outro domínio
+        REACT_APP_BACKEND_URL: https://ia.sconnecta.com.br
+    restart: unless-stopped
+    environment:
+      DOMAIN: ia.sconnecta.com.br
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - backend
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  mongo_data:
+  mavis_data:
+  caddy_data:
+  caddy_config:

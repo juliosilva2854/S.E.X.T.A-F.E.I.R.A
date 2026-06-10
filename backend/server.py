@@ -40,7 +40,7 @@ from mavis.core import brain as brain_core
 from mavis.core import router as router_core
 from mavis.core.paths import (
     ARQUIVO_MEMORIA, ARQUIVO_DB_ROTAS, ARQUIVO_RELATORIOS,
-    ARQUIVO_TOKEN_GOOGLE, ARQUIVO_CREDENCIAIS_GOOGLE, ARQUIVO_SHEETS_CACHE,
+    ARQUIVO_TOKEN_GOOGLE, ARQUIVO_CREDENCIAIS_GOOGLE, ARQUIVO_SHEETS_CACHE, DATA_DIR,
 )
 from mavis.skills import system_info as sys_skill
 from mavis.skills import news_weather as nw_skill
@@ -73,7 +73,7 @@ PUBLISH_FILES = {
     "banco_de_dados": ARQUIVO_DB_ROTAS,
     "banco_relatorios": ARQUIVO_RELATORIOS,
     "sheets_cache": ARQUIVO_SHEETS_CACHE,
-    "geocode_cache": str(APP_ROOT / "geocode_cache.json"),
+    "geocode_cache": str(DATA_DIR / "geocode_cache.json"),
 }
 
 # ---------- Logging ----------
@@ -2234,6 +2234,14 @@ async def users_list():
 
     users.sort(key=_key, reverse=True)
     return users
+
+
+@api.post("/users/{user_id}/logout")
+async def user_logout_all(user_id: str):
+    """Revoga TODAS as sessões ativas de um usuário (sair de todos os dispositivos)."""
+    res = await db.user_sessions.delete_many({"user_id": user_id})
+    push_log("warn", f"AUTH > sessões revogadas de {user_id}: {res.deleted_count}", "auth")
+    return {"ok": True, "revoked": res.deleted_count}
 
 
 # ==============================================================

@@ -1,0 +1,19 @@
+# ---- build do React ----
+FROM node:20-alpine AS build
+WORKDIR /app
+
+# A URL do backend é embutida no bundle em tempo de build.
+# Como o Caddy serve frontend e backend no MESMO domínio, use o domínio público.
+ARG REACT_APP_BACKEND_URL=https://ia.sconnecta.com.br
+ENV REACT_APP_BACKEND_URL=$REACT_APP_BACKEND_URL
+
+COPY frontend/package.json frontend/yarn.lock ./
+RUN yarn install --frozen-lockfile
+COPY frontend/ ./
+RUN yarn build
+
+# ---- runtime: Caddy (HTTPS automático) ----
+FROM caddy:2-alpine
+COPY deploy/Caddyfile /etc/caddy/Caddyfile
+COPY --from=build /app/build /srv
+EXPOSE 80 443

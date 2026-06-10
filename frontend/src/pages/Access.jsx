@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { api } from "../api";
 import { toast } from "sonner";
 import {
-  ShieldCheck, Plus, Trash, EnvelopeSimple, UserCircle, GoogleLogo, Lock, Clock,
+  ShieldCheck, Plus, Trash, EnvelopeSimple, UserCircle, GoogleLogo, Lock, Clock, SignOut,
 } from "@phosphor-icons/react";
 import { useAuth } from "../auth/AuthContext";
 
@@ -50,6 +50,14 @@ export default function Access() {
       await load();
       toast.success("E-mail removido");
     } catch { toast.error("Falha ao remover"); }
+  };
+
+  const logoutAll = async (userId, name) => {
+    try {
+      const { data } = await api.post(`/users/${encodeURIComponent(userId)}/logout`);
+      await load();
+      toast.success(`${data.revoked} sessão(ões) encerrada(s) de ${name}`);
+    } catch { toast.error("Falha ao encerrar sessões"); }
   };
 
   return (
@@ -140,6 +148,11 @@ export default function Access() {
                 <div className="text-right">
                   <div className="text-[10px] uppercase tracking-widest text-gray-500">Último acesso</div>
                   <div className="text-amber-400 text-xs font-mono">{fmt(u.last_login)}</div>
+                  <button onClick={() => logoutAll(u.user_id, u.name || u.email)}
+                    data-testid={`access-logout-all-${u.user_id}`}
+                    className="mt-2 inline-flex items-center gap-1.5 border border-[#27272A] text-gray-400 hover:border-red-500/50 hover:text-red-400 font-bold uppercase tracking-wider text-[10px] px-2.5 py-1.5 rounded transition-colors">
+                    <SignOut size={12} weight="bold" /> Encerrar sessões
+                  </button>
                 </div>
               </div>
             ))}
