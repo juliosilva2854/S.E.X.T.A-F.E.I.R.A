@@ -209,9 +209,102 @@ def _flat_days(parsed: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     return out
 
 
+# ==============================================================
+# Adapter Google Sheets (fonte primária quando cache existir)
+# ==============================================================
+_TIPO_TO_ATIVIDADE = {
+    "preventiva":          "manutencao_preventiva",
+    "preventivo":          "manutencao_preventiva",
+    "manutencao":          "manutencao_preventiva",
+    "atendimento":         "atendimento_tecnico",
+    "atendimento tecnico": "atendimento_tecnico",
+    "corretivo":           "atendimento_tecnico",
+    "entrega":             "entrega_insumos",
+    "entrega de insumos":  "entrega_insumos",
+    "insumos":             "entrega_insumos",
+    "troca":               "troca_equipamento",
+    "substituicao":        "troca_equipamento",
+    "configuracao":        "configuracao",
+}
+
+
+def _flat_days_from_sheets() -> Optional[List[Dict[str, Any]]]:
+    """Se houver cache do Google Sheets, monta a lista de dias no MESMO formato
+    do parser de relatórios narrativos. Retorna None se cache vazio.
+    """
+    try:
+        from mavis.skills import google_sheets as gs
+    except Exception:
+        return None
+
+    cache = gs.read_cache()
+    rows = cache.get("rows") or []
+    if not rows:
+        return None
+
+    by_date: Dict[str, Dict[str, Any]] = {}
+    for r in rows:
+        # data vem como "YYYY-MM-DD" do cache, mas o resto do analytics usa "DD/MM/YYYY"
+        try:
+            dt = datetime.strptime(r["data"], "%Y-%m-%d")
+        except ValueError:
+            continue
+        date_str = dt.strftime("%d/%m/%Y")
+
+        bucket = by_date.setdefault(date_str, {
+            "date": date_str,
+            "locations": [],
+            "_locs_set": set(),
+            "km": 0.0,
+            "activities": defaultdict(int),
+            "equipments": defaultdict(int),
+        })
+
+        # Localização: usa o destino se não for CASA (origem CASA é padrão)
+        destino = (r.get("destino") or "").upper().strip()
+        if destino and destino != "CASA" and destino not in bucket["_locs_set"]:
+            bucket["locations"].append(destino)
+            bucket["_locs_set"].add(destino)
+        origem = (r.get("origem") or "").upper().strip()
+        if origem and origem != "CASA" and origem not in bucket["_locs_set"]:
+            bucket["locations"].append(origem)
+            bucket["_locs_set"].add(origem)
+
+        bucket["km"] += float(r.get("km") or 0)
+
+        # Atividade derivada do "Tipo Visita"
+        tipo_norm = _normalize(r.get("tipo") or "")
+        atividade = None
+        for k, v in _TIPO_TO_ATIVIDADE.items():
+            if k in tipo_norm:
+                atividade = v
+                break
+        if atividade:
+            bucket["activities"][atividade] += 1
+
+    out: List[Dict[str, Any]] = []
+    for d in by_date.values():
+        d.pop("_locs_set", None)
+        d["km"] = round(d["km"], 1)
+        d["activities"] = dict(d["activities"])
+        d["equipments"] = dict(d["equipments"])
+        out.append(d)
+    out.sort(key=lambda x: _to_date(x["date"]))
+    return out
+
+
+def _flat_days_smart() -> List[Dict[str, Any]]:
+    """Fonte de dados primária do Analytics: Google Sheets quando disponível,
+    relatórios narrativos como fallback.
+    """
+    sheets = _flat_days_from_sheets()
+    if sheets:
+        return sheets
+    return _flat_days(parse_all())
+
+
 def kpis(fuel_cost_per_liter: float = 5.89, km_per_liter: float = 10.0) -> Dict[str, Any]:
-    parsed = parse_all()
-    days = _flat_days(parsed)
+    days = _flat_days_smart()
     total_km = sum(d["km"] for d in days)
     total_atendimentos = 0
     total_preventivas = 0
@@ -261,8 +354,7 @@ def kpis(fuel_cost_per_liter: float = 5.89, km_per_liter: float = 10.0) -> Dict[
 
 
 def weekly_series(weeks: int = 12) -> List[Dict[str, Any]]:
-    parsed = parse_all()
-    days = _flat_days(parsed)
+    days = _flat_days_smart()
     by_week: Dict[str, Dict[str, Any]] = defaultdict(lambda: {"km": 0.0, "visitas": 0, "dias_uteis": 0, "preventivas": 0, "atendimentos": 0})
     for d in days:
         wk = _week_key(_to_date(d["date"]))
@@ -278,8 +370,7 @@ def weekly_series(weeks: int = 12) -> List[Dict[str, Any]]:
 
 
 def monthly_series(months: int = 12) -> List[Dict[str, Any]]:
-    parsed = parse_all()
-    days = _flat_days(parsed)
+    days = _flat_days_smart()
     by_month: Dict[str, Dict[str, Any]] = defaultdict(lambda: {"km": 0.0, "visitas": 0, "dias_uteis": 0,
                                                                 "preventivas": 0, "atendimentos": 0,
                                                                 "entregas": 0, "trocas": 0, "locs": Counter()})
@@ -314,8 +405,7 @@ def monthly_series(months: int = 12) -> List[Dict[str, Any]]:
 
 
 def daily_series(days_window: int = 60) -> List[Dict[str, Any]]:
-    parsed = parse_all()
-    days = _flat_days(parsed)[-days_window:]
+    days = _flat_days_smart()[-days_window:]
     return [{
         "date": d["date"],
         "km": d["km"],
@@ -326,8 +416,7 @@ def daily_series(days_window: int = 60) -> List[Dict[str, Any]]:
 
 def heatmap_weekday() -> Dict[str, Any]:
     """Distribui KM/atividade por dia da semana (mapa de calor: seg-sex)."""
-    parsed = parse_all()
-    days = _flat_days(parsed)
+    days = _flat_days_smart()
     weekdays = ["SEG", "TER", "QUA", "QUI", "SEX", "SAB", "DOM"]
     by_wd: Dict[int, Dict[str, float]] = {i: {"km": 0.0, "dias": 0, "visitas": 0} for i in range(7)}
     for d in days:
@@ -349,8 +438,7 @@ def heatmap_weekday() -> Dict[str, Any]:
 
 
 def activity_distribution() -> List[Dict[str, Any]]:
-    parsed = parse_all()
-    days = _flat_days(parsed)
+    days = _flat_days_smart()
     counter = Counter()
     for d in days:
         for k, v in d.get("activities", {}).items():
@@ -386,8 +474,7 @@ def filtered_days(start: str = "", end: str = "", unidade: str = "") -> List[Dic
     - start/end: 'YYYY-MM-DD' ou 'DD/MM/YYYY'
     - unidade: substring (normalizada) que deve aparecer em qualquer location do dia.
     """
-    parsed = parse_all()
-    days = _flat_days(parsed)
+    days = _flat_days_smart()
     dt_start = _parse_iso_or_br(start) if start else None
     dt_end = _parse_iso_or_br(end) if end else None
     unorm = _normalize(unidade) if unidade else ""
@@ -409,8 +496,7 @@ def filtered_days(start: str = "", end: str = "", unidade: str = "") -> List[Dic
 
 def unidades_list() -> List[str]:
     """Lista única de unidades que JÁ apareceram nos relatórios (não só no banco)."""
-    parsed = parse_all()
-    days = _flat_days(parsed)
+    days = _flat_days_smart()
     seen = Counter()
     for d in days:
         for loc in d.get("locations", []):
@@ -623,8 +709,8 @@ def resumo_texto(
 
 def month_detail(month_str: str) -> Dict[str, Any]:
     """Detalhe de um mês específico (YYYY-MM)."""
-    parsed = parse_all()
-    days = [d for d in _flat_days(parsed) if _month_key(_to_date(d["date"])) == month_str]
+    days = _flat_days_smart()
+    days = [d for d in days if _month_key(_to_date(d["date"])) == month_str]
     if not days:
         return {"error": "mês sem dados", "month": month_str}
     total_km = sum(d["km"] for d in days)
@@ -719,8 +805,7 @@ def monthly_macro(month_str: str) -> Dict[str, Any]:
         "concentracao_top3":   0.0..1.0,                  # quanto do total de visitas está no top3
       }
     """
-    parsed = parse_all()
-    days = _flat_days(parsed)
+    days = _flat_days_smart()
 
     cur_days = [d for d in days if _month_key(_to_date(d["date"])) == month_str]
     prev_month_str = _prev_month_key(month_str)

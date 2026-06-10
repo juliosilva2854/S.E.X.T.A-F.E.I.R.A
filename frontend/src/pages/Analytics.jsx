@@ -55,6 +55,10 @@ export default function Analytics() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareDest, setShareDest] = useState("");
 
+  // Google Sheets sync
+  const [sheetsStatus, setSheetsStatus] = useState(null);
+  const [sheetsSyncBusy, setSheetsSyncBusy] = useState(false);
+
   // refs do mapa
   const mapInstance = useRef(null);
   const heatRef = useRef(null);
@@ -112,6 +116,7 @@ export default function Analytics() {
     api.get("/analytics/monthly?months=12").then((r) => setMonthly(r.data)).catch(() => { });
     api.get("/analytics/unidades").then((r) => setUnidades(r.data)).catch(() => { });
     loadAutoReport();
+    loadSheetsStatus();
     loadAll();
     // eslint-disable-next-line
   }, []);
@@ -121,6 +126,32 @@ export default function Analytics() {
       const { data } = await api.get("/analytics/auto-report");
       setAutoCfg(data.config); setAutoNext(data.next_run); setAutoReports(data.reports || []);
     } catch { /* silencioso */ }
+  };
+
+  const loadSheetsStatus = async () => {
+    try {
+      const { data } = await api.get("/sheets/status");
+      setSheetsStatus(data);
+    } catch { setSheetsStatus({ configured: false }); }
+  };
+
+  const syncSheets = async () => {
+    setSheetsSyncBusy(true);
+    toast.info("Sincronizando planilha do Google Sheets...");
+    try {
+      const { data } = await api.post("/sheets/sync");
+      if (data.ok) {
+        toast.success(`Planilha sincronizada: ${data.total_rows} linhas em ${data.abas?.length || 0} abas`);
+        await loadSheetsStatus();
+        loadAll();
+      } else {
+        toast.error(data.error || "Falha ao sincronizar planilha");
+      }
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || "Falha ao sincronizar planilha");
+    } finally {
+      setSheetsSyncBusy(false);
+    }
   };
 
   const saveAutoCfg = async (patch) => {
@@ -309,11 +340,27 @@ return (
           <p className="text-amber-500 text-[10px] md:text-xs tracking-[0.2em] uppercase font-bold mt-0.5">
               // KM · DESTINOS · COMBUSTÍVEL · MAPA DE CALOR
           </p>
+          {sheetsStatus && (
+            <p data-testid="sheets-source-label" className="text-[10px] text-gray-500 mt-1">
+              FONTE:{" "}
+              <span className={sheetsStatus.configured ? "text-emerald-400" : "text-amber-500"}>
+                {sheetsStatus.configured
+                  ? `Google Sheets (${sheetsStatus.total_rows} linhas · sync ${sheetsStatus.last_sync ? new Date(sheetsStatus.last_sync).toLocaleString("pt-BR") : "—"})`
+                  : "Relatórios narrativos (Sheets ainda não sincronizado)"}
+              </span>
+            </p>
+          )}
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <button onClick={() => shareWhatsApp()} data-testid="share-whatsapp-button"
             className="inline-flex items-center gap-1.5 bg-[#25D366] text-[#052e16] hover:bg-[#22c55e] font-bold uppercase tracking-wider text-xs px-3 py-2 rounded transition-colors">
             <WhatsappLogo size={15} weight="fill" /> Compartilhar
+          </button>
+          <button onClick={syncSheets} disabled={sheetsSyncBusy} data-testid="sheets-sync-button"
+            className="inline-flex items-center gap-1.5 border border-emerald-500/60 text-emerald-400 hover:bg-emerald-500 hover:text-[#052e16] disabled:opacity-50 font-bold uppercase tracking-wider text-xs px-3 py-2 rounded transition-colors"
+            title={sheetsStatus?.last_sync ? `Última sync: ${new Date(sheetsStatus.last_sync).toLocaleString("pt-BR")} · ${sheetsStatus.total_rows} linhas` : "Nunca sincronizado"}>
+            <ArrowsClockwise size={14} className={sheetsSyncBusy ? "animate-spin" : ""} weight="bold" />
+            Sincronizar Planilha
           </button>
           <ExportBtn icon={FileCsv} label="CSV" onClick={() => exportData("csv")} testid="export-csv-button" />
           <ExportBtn icon={FileXls} label="EXCEL" onClick={() => exportData("xlsx")} testid="export-xlsx-button" />

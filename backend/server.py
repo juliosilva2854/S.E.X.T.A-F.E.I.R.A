@@ -26,6 +26,7 @@ load_dotenv(ROOT_DIR / ".env")
 
 # Permite importar o pacote mavis/ (que vive em /app/mavis)
 sys.path.insert(0, str(ROOT_DIR.parent))
+APP_ROOT = ROOT_DIR.parent
 
 from mavis.core import storage as _storage
 from mavis.core import long_memory as lm_core
@@ -283,9 +284,97 @@ async def _execute_skill(intent: str, raw_text: str) -> Dict[str, Any]:
             f = lm_core.add_fact(extracted.get("category", "outro"), extracted["fact"])
             return {"data": f}
 
+        # Comandos operacionais legacy (planilha / relatório / aprender rotas)
+        if intent == "route.legacy":
+            return await _execute_legacy(raw_text)
+
         return {"unhandled": True}
     except Exception as e:
         return {"error": str(e)}
+
+
+async def _execute_legacy(raw_text: str) -> Dict[str, Any]:
+    """Executa comandos operacionais legados (Sheets/Playwright).
+
+    Decide a sub-rotina pelo texto:
+      - "atualizar planilha" / "preencher quilometragem" -> planilhas.preencher_km_faltantes()
+      - "aprender rotas" / "estudar rotas"               -> aprender_rotas.treinar_mavis()
+      - "gerar relatório" / "resumo da semana"           -> relatorios.gerar_resumo()
+      - "sincronizar planilha" / "sync sheets"           -> google_sheets.sync_all()
+
+    Tarefas pesadas (Playwright/FieldControl) só rodam local. Se estiver hospedado
+    sem credenciais.json, retorna {desktop_only: True} para o cérebro avisar.
+    """
+    txt = raw_text.lower().strip()
+    loop = asyncio.get_event_loop()
+
+    # 1) Atualizar planilha (preencher KM faltantes a partir do banco de rotas)
+    if any(k in txt for k in ["atualizar planilha", "preencher quilometragem",
+                              "preencher planilha", "atualizar plan", "fazer planilha"]):
+        # Tenta caminho moderno: gspread + auth Mavis
+        try:
+            import sys as _sys
+            _sys.path.insert(0, str(APP_ROOT))
+            import planilhas as _planilhas
+            res = await loop.run_in_executor(None, _planilhas.preencher_km_faltantes)
+            push_log("info", f"LEGACY > atualizar planilha: {str(res)[:120]}", "router")
+            return {"data": res, "action": "planilha.preencher"}
+        except FileNotFoundError:
+            return {"desktop_only": True, "action": "planilha.preencher",
+                    "msg": "credenciais.json não encontrado neste host"}
+        except Exception as e:
+            return {"error": str(e), "action": "planilha.preencher"}
+
+    # 2) Aprender / estudar rotas (lê planilha e atualiza banco_de_dados.json)
+    if any(k in txt for k in ["aprender rotas", "estudar rotas"]):
+        try:
+            import sys as _sys
+            _sys.path.insert(0, str(APP_ROOT))
+            import aprender_rotas as _ar
+            res = await loop.run_in_executor(None, _ar.treinar_mavis)
+            push_log("info", f"LEGACY > aprender rotas: {str(res)[:120]}", "router")
+            return {"data": res, "action": "rotas.aprender"}
+        except FileNotFoundError:
+            return {"desktop_only": True, "action": "rotas.aprender",
+                    "msg": "credenciais.json não encontrado neste host"}
+        except Exception as e:
+            return {"error": str(e), "action": "rotas.aprender"}
+
+    # 3) Gerar relatório (Playwright + FieldControl - DESKTOP_ONLY)
+    if any(k in txt for k in ["gerar relatório", "gerar relatorio",
+                              "resumo da semana", "relatório da semana",
+                              "relatorio da semana", "relatório mensal",
+                              "relatório de"]):
+        # Só roda local: depende de Playwright + chromium + credenciais.json
+        if not os.path.exists(ARQUIVO_CREDENCIAIS_GOOGLE):
+            return {"desktop_only": True, "action": "relatorio.gerar",
+                    "msg": "Geração de relatório precisa do PC (FieldControl + credenciais)"}
+        try:
+            import sys as _sys
+            _sys.path.insert(0, str(APP_ROOT))
+            import relatorios as _rel
+            res = await loop.run_in_executor(None, lambda: _rel.gerar_resumo(raw_text))
+            push_log("info", f"LEGACY > gerar relatório: {str(res)[:120]}", "router")
+            return {"data": res, "action": "relatorio.gerar"}
+        except Exception as e:
+            return {"error": str(e), "action": "relatorio.gerar"}
+
+    # 4) Sincronizar planilha (puxa do Sheets para o cache local do Analytics)
+    if any(k in txt for k in ["sincroniz", "sync planilha", "sync sheets",
+                              "atualizar analytics", "atualiza analytics",
+                              "puxar planilha", "puxa planilha",
+                              "buscar planilha", "busca planilha"]):
+        try:
+            from mavis.skills import google_sheets as gs
+            res = await loop.run_in_executor(None, gs.sync_all)
+            push_log("info" if res.get("ok") else "error",
+                     f"LEGACY > sync sheets: {res.get('total_rows', 0)} linhas",
+                     "router")
+            return {"data": res, "action": "sheets.sync"}
+        except Exception as e:
+            return {"error": str(e), "action": "sheets.sync"}
+
+    return {"unhandled_legacy": True, "raw_text": raw_text}
 
 
 @api.post("/chat", response_model=ChatResponse)
@@ -1458,6 +1547,36 @@ async def whatsapp_unread(limit: int = 10):
     from mavis.skills import whatsapp as wa
     loop = asyncio.get_event_loop()
     return await loop.run_in_executor(None, lambda: wa.list_unread(limit))
+
+
+# ==============================================================
+# GOOGLE SHEETS — alimentação do Analytics
+# ==============================================================
+@api.get("/sheets/status")
+async def sheets_status():
+    """Estado do cache local do Google Sheets (última sync, total linhas, abas)."""
+    from mavis.skills import google_sheets as gs
+    return gs.status()
+
+
+@api.post("/sheets/sync")
+async def sheets_sync():
+    """Força sincronização da planilha KM (varre TODAS as abas mensais)."""
+    from mavis.skills import google_sheets as gs
+    loop = asyncio.get_event_loop()
+    res = await loop.run_in_executor(None, gs.sync_all)
+    push_log("info" if res.get("ok") else "error",
+             f"SHEETS > sync: {res.get('total_rows', 0)} linhas, ok={res.get('ok')}",
+             "sheets")
+    return res
+
+
+@api.get("/sheets/rows")
+async def sheets_rows(start: str = "", end: str = "", unidade: str = "", limit: int = 500):
+    """Devolve linhas estruturadas (Data, Origem, Destino, KM, Tipo, Ticket) do cache."""
+    from mavis.skills import google_sheets as gs
+    rows = gs.get_rows(start=start, end=end, unidade=unidade)
+    return {"total": len(rows), "rows": rows[-limit:]}
 
 # ==============================================================
 # PDF Fields catalog (para o modal de seleção)

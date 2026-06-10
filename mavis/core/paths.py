@@ -16,3 +16,6 @@ ARQUIVO_TOKEN_GOOGLE = os.environ.get("ARQUIVO_TOKEN_GOOGLE", str(DATA_DIR / "go
 ARQUIVO_CREDENCIAIS_GOOGLE = os.environ.get(
     "ARQUIVO_CREDENCIAIS_GOOGLE", str(DATA_DIR / "credenciais.json")
 )
+ARQUIVO_SHEETS_CACHE = os.environ.get(
+    "ARQUIVO_SHEETS_CACHE", str(DATA_DIR / "sheets_cache.json")
+)

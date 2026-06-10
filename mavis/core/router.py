@@ -88,7 +88,12 @@ INTENTS = {
 
     # Rotas existentes (legacy)
     "route.legacy": [r"\baprender\s+rotas\b", r"\bestudar\s+rotas\b", r"\batualizar\s+planilha\b",
-                     r"\bpreencher\s+quilometragem\b", r"\bgerar?\s+relat[óo]rio\b"],
+                     r"\bpreencher\s+planilha\b", r"\bfazer\s+planilha\b",
+                     r"\bpreencher\s+quilometragem\b", r"\bgerar?\s+relat[óo]rio\b",
+                     r"\bresumo\s+da\s+semana\b", r"\brelat[óo]rio\s+(da|de|mensal|semanal)\b",
+                     r"\bsincroniz\w+\s+planilha\b", r"\bsync\s+(planilha|sheets)\b",
+                     r"\batualiz\w+\s+(o\s+)?analytics\b", r"\bpux\w+\s+(a\s+)?planilha\b",
+                     r"\bbusc\w+\s+(da\s+|na\s+)?planilha\b"],
 }
 
 
