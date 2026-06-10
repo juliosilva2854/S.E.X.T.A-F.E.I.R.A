@@ -18,7 +18,13 @@ https://mavis-cloud.preview.emergentagent.com
 
 ## O que foi feito
 
-### 10/06/2026 (parte 4) — Arquitetura híbrida: Auth mista na nuvem + Publish local→nuvem
+### 10/06/2026 (parte 5) — Google OAuth NATIVO (zero Emergent) + painel Acesso
+- **Removida a dependência da Emergent no login Google.** Agora é OAuth 2.0 nativo (Authorization Code): o backend troca o `code` direto em `oauth2.googleapis.com/token` e lê o e-mail em `googleapis.com/oauth2/v2/userinfo`. Credenciais próprias do usuário em `backend/.env` (`GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`, client Web do projeto `mavis-system`). Redirect dinâmico `window.location.origin + /auth/google`. `/api/auth/config` expõe `google_enabled` + `google_client_id`.
+- **Frontend**: `Login.jsx` monta a URL de consentimento do Google (scope `openid email profile`, `state` p/ CSRF); rota `/auth/google` (`AuthCallback`) troca o code via `POST /api/auth/google {code, redirect_uri}`. Botão Google só aparece se `google_enabled`.
+- **Painel "Acesso"** (`/access`, item na sidebar): gerencia a allowlist de e-mails Google (add/remove) e mostra "Últimos acessos" (`GET /api/users`, campo `last_login` gravado em cada login). Aviso visual quando em modo local.
+- Verificado: Google retorna a tela de consentimento correta para `ia.sconnecta.com.br` e o preview (redirect URIs OK). Login por senha segue 100% independente.
+
+
 - **Flag `IS_CLOUD`** (`backend/.env`): `false`=local (painel 100% aberto, sem login — automação desktop intacta); `true`=nuvem (painel admin exige login). Default `false`.
 - **Guard condicional** (`cloud_auth_guard` middleware em `server.py`): quando `IS_CLOUD=true`, todo `/api/*` exige sessão, EXCETO prefixos livres `/api/auth/`, `/api/public/` (token de leitura) e `/api/publish` (X-Publish-Key). `/p/analytics` continua público.
 - **Auth mista** (Emergent Managed Google Auth + senha): endpoints `GET /api/auth/config`, `POST /api/auth/google` (valida allowlist), `POST /api/auth/password` (ADMIN_PASSWORD, compare_digest), `GET /api/auth/me`, `POST /api/auth/logout`. Sessão em Mongo (`user_sessions`, cookie httpOnly 7d ou Bearer). Usuários em `users` (user_id UUID, projeção `{_id:0}`).
