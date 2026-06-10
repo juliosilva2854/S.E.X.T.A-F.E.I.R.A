@@ -14,7 +14,7 @@ da ToLife em UPAs/AMAs/hospitais na Grande São Paulo.
 - Dados: 267 rotas KM + 5 relatórios + 20 unidades geolocalizadas + favoritos WhatsApp
 
 ## URL preview atual
-https://5ad4471b-753a-4653-a0a4-dd5fdcb8a0a5.preview.emergentagent.com
+https://repo-analyzer-243.preview.emergentagent.com
 
 ## O que foi feito
 
