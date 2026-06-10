@@ -750,7 +750,7 @@ return (
               <select data-testid="share-destination" value={shareDest}
                 onChange={(e) => setShareDest(e.target.value)}
                 className="w-full bg-[#050505] border border-[#27272A] text-gray-200 text-sm rounded px-3 py-2 focus:border-amber-500 focus:outline-none">
-                <option value="">Sem destino fixo (abrir wa.me genérico)</option>
+                <option value="">Apenas baixar PDF (sem envio)</option>
                 {favorites.map((f) => (
                   <option key={f.id} value={f.id}>[{f.tipo}] {f.display_name}</option>
                 ))}
@@ -758,7 +758,7 @@ return (
               <p className="text-[10px] text-gray-600 mt-1">
                 {favorites.length === 0
                   ? "Nenhum favorito cadastrado. Acesse /whatsapp para adicionar."
-                  : "Se rodando local (DESKTOP_MODE=1), o envio é automático. No painel hospedado, abrimos o wa.me com o destino escolhido."}
+                  : "Envio direto via WAHA (background). Se o WAHA estiver OFFLINE, o PDF é apenas baixado."}
               </p>
             </div>
             <div className="flex justify-end gap-2">
