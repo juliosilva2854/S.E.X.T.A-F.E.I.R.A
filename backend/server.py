@@ -14,7 +14,7 @@ from datetime import datetime, timezone, timedelta
 from typing import List, Optional, Dict, Any
 from pathlib import Path
 
-from fastapi import FastAPI, APIRouter, HTTPException, WebSocket, WebSocketDisconnect, Response, UploadFile, File, Form
+from fastapi import FastAPI, APIRouter, HTTPException, WebSocket, WebSocketDisconnect, Response, UploadFile, File, Form, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
@@ -1826,6 +1826,125 @@ async def analytics_parse_all():
     """Retorna todos os relatórios parseados (útil para debug)."""
     from mavis.skills import analytics as an
     return an.parse_all()
+
+
+# ==============================================================
+# ACESSO PÚBLICO (token) — página Analytics SOMENTE LEITURA + extração
+# ==============================================================
+async def _verify_public(request: Request, s: str = "", t: str = ""):
+    """Dependency: valida o token de compartilhamento (query s/t ou headers)."""
+    from mavis.skills import public_access as pa
+    share_id = s or request.headers.get("X-Share-Id", "")
+    token = t or request.headers.get("X-Share-Token", "")
+    res = pa.validate(share_id, token)
+    if not res.get("ok"):
+        raise HTTPException(res.get("status", 401), res.get("error", "acesso negado"))
+    return res
+
+
+@api.get("/public/validate")
+async def public_validate(auth: dict = Depends(_verify_public)):
+    from mavis.skills import public_access as pa
+    pa.mark_view(auth["id"])
+    return {"ok": True, "page": auth.get("page", "analytics"), "label": auth.get("label", "")}
+
+
+@api.get("/public/analytics/all")
+async def public_analytics_all(auth: dict = Depends(_verify_public),
+                               start: str = "", end: str = "", unidade: str = "",
+                               fuel_cost: float = 5.89, km_per_liter: float = 10.0):
+    from mavis.skills import analytics as an
+    return {
+        "kpis": an.kpis_filtered(start=start, end=end, unidade=unidade,
+                                 fuel_cost_per_liter=fuel_cost, km_per_liter=km_per_liter),
+        "weekly": an.weekly_filtered(start=start, end=end, unidade=unidade, weeks=12),
+        "daily": an.daily_series(30),
+        "heatmap": an.heatmap_weekday(),
+        "activities": an.activity_filtered(start=start, end=end, unidade=unidade),
+        "monthly": an.monthly_series(12),
+        "unidades": an.unidades_list(),
+        "map_data": an.map_data(start=start, end=end, unidade=unidade, allow_remote=False),
+    }
+
+
+@api.get("/public/analytics/month/{month}")
+async def public_analytics_month(month: str, auth: dict = Depends(_verify_public)):
+    from mavis.skills import analytics as an
+    out = an.month_detail(month)
+    if "error" in out:
+        raise HTTPException(404, out["error"])
+    return out
+
+
+@api.get("/public/analytics/export")
+async def public_analytics_export(auth: dict = Depends(_verify_public),
+                                  format: str = "csv", start: str = "", end: str = "",
+                                  unidade: str = "", fuel_cost: float = 5.89,
+                                  km_per_liter: float = 10.0):
+    from mavis.skills import analytics as an
+    from mavis.skills import analytics_export as ex
+    rows = an.export_rows(start=start, end=end, unidade=unidade)
+    kpis = an.kpis_filtered(start=start, end=end, unidade=unidade,
+                            fuel_cost_per_liter=fuel_cost, km_per_liter=km_per_liter)
+    fmt = (format or "csv").lower()
+    ts = datetime.now().strftime("%Y%m%d_%H%M")
+    if fmt == "csv":
+        return Response(content=ex.to_csv(rows), media_type="text/csv; charset=utf-8",
+                        headers={"Content-Disposition": f'attachment; filename="analytics_{ts}.csv"'})
+    if fmt in ("xlsx", "excel"):
+        return Response(content=ex.to_xlsx(rows, kpis),
+                        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        headers={"Content-Disposition": f'attachment; filename="analytics_{ts}.xlsx"'})
+    if fmt == "pdf":
+        return Response(content=ex.to_pdf(rows, kpis, filtro={"start": start, "end": end, "unidade": unidade}),
+                        media_type="application/pdf",
+                        headers={"Content-Disposition": f'attachment; filename="analytics_{ts}.pdf"'})
+    raise HTTPException(400, "format inválido (use csv|xlsx|pdf)")
+
+
+# ---------- Admin: gestão de tokens de compartilhamento ----------
+class PublicTokenIn(BaseModel):
+    label: Optional[str] = ""
+    max_failures: Optional[int] = 5
+
+
+@api.get("/public-tokens")
+async def public_tokens_list():
+    from mavis.skills import public_access as pa
+    return pa.list_tokens()
+
+
+@api.post("/public-tokens")
+async def public_tokens_create(body: PublicTokenIn):
+    from mavis.skills import public_access as pa
+    out = pa.create(body.label or "", body.max_failures or 5)
+    push_log("info", f"Link público gerado: {out['id']} ({out['label'] or 'sem rótulo'})", "share")
+    return out
+
+
+@api.post("/public-tokens/{tid}/revoke")
+async def public_tokens_revoke(tid: str):
+    from mavis.skills import public_access as pa
+    if not pa.revoke(tid):
+        raise HTTPException(404, "token não encontrado")
+    push_log("warn", f"Link público revogado: {tid}", "share")
+    return {"ok": True}
+
+
+@api.post("/public-tokens/{tid}/reactivate")
+async def public_tokens_reactivate(tid: str):
+    from mavis.skills import public_access as pa
+    if not pa.reactivate(tid):
+        raise HTTPException(404, "token não encontrado")
+    return {"ok": True}
+
+
+@api.delete("/public-tokens/{tid}")
+async def public_tokens_delete(tid: str):
+    from mavis.skills import public_access as pa
+    if not pa.delete(tid):
+        raise HTTPException(404, "token não encontrado")
+    return {"ok": True}
 
 
 # ==============================================================

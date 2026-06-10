@@ -18,6 +18,13 @@ https://project-scanner-47.preview.emergentagent.com
 
 ## O que foi feito
 
+### 10/06/2026 (parte 3) — Segurança do repo + Página Analytics pública (token)
+- **Segurança / GitHub**: removidos do working tree `backend/.env.env.bak` (continha CHAVE_GEMINI real + senha FieldControl) e `frontend/.env.production.local`. Redigidas credenciais em `.emergent/summary.txt` e `memory/test_credentials.md`. `.gitignore` reforçado (`*.bak`, `.env.*`, `*.env.*`, `public_tokens.json`, `sheets_cache.json`). Corrigido bug do `env_manager` que gerava `.env.env.bak` (agora `.env.bak`). NOTA: a chave Gemini exposta ainda vive no HISTÓRICO do git → usuário deve ROTACIONAR a chave (AI Studio) e trocar a senha FieldControl.
+- **Página pública Analytics (somente leitura + extração)**: nova skill `mavis/skills/public_access.py` (tokens guardados como hash SHA-256, brute-force: revoga após N tentativas inválidas). Endpoints: `GET /api/public/validate`, `GET /api/public/analytics/all`, `/month/{m}`, `/export` (csv/xlsx/pdf), admin `GET/POST/DELETE /api/public-tokens` + `/revoke` + `/reactivate`. Store em `public_tokens.json` (gitignored).
+- **Frontend**: nova rota pública `/p/analytics?s=<id>&t=<token>` (fora do Layout, sem sidebar, badge SOMENTE LEITURA, filtros, KPIs, mapa de calor, gráficos, export). Nova página admin `/share` ("Compartilhar" na sidebar) para gerar/copiar URL/revogar/reativar/excluir links. Token exibido uma única vez na criação.
+- **Validação `iniciar_tudo.bat`**: revisado estaticamente — cadeia `preparar.bat → iniciar_oculto.vbs` + `docker-compose.yml` (serviço waha) conferem. Não executável no container Linux (é batch Windows). Caveats: `npx serve` baixa o pacote na 1ª execução (precisa de internet); senha do dashboard WAHA está no docker-compose.
+- **Fix ambiente**: recriados `backend/.env` e `frontend/.env` (sumiram no fork) + `DANGEROUSLY_DISABLE_HOST_CHECK=true` (resolveu "Invalid Host header").
+
 ### 10/06/2026 (parte 2) — Backlog: auto-sync Sheets + refactor Analytics
 - **P3 Auto-sync diário do Google Sheets**: APScheduler agenda `google_sheets.sync_all()` em horário configurável (default 7h). Endpoints `GET /api/sheets/autosync` + `POST /api/sheets/autosync/toggle?enabled=true&hour=7` (persiste em `.env` via `env_manager` + aplica em memória sem restart). UI: badge `AUTO-SYNC: 7h/OFF` clicável no header do Analytics.
 - **P1 Refactor Analytics.jsx em subcomponentes**:

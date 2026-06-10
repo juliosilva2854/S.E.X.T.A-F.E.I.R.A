@@ -134,8 +134,8 @@ Healthy.
   - Known regressions: []
 
 **Credentials to test flow:**
-Email: julio.bernardino@tolife.com.br
-Senha: JulioCesar701!
+Email: (redigido — ver backend/.env)
+Senha: (redigido — ver backend/.env)
 
 **What agent forgot to execute**
 The agent prepared all the internal logic in the  directory but did not finish creating the FastAPI routes in  or rebuilding the React frontend in  before the session ended. The next agent must pick up immediately from here.</analysis>

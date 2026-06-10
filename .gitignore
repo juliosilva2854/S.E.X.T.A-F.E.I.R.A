@@ -2,9 +2,17 @@
 credenciais.json
 .env
 *.env
+.env.*
+*.env.*
+*.bak
 backend/.env
+backend/.env.bak
+backend/.env.env.bak
 frontend/.env
+frontend/.env.production.local
 google_token.json
+public_tokens.json
+sheets_cache.json
 config.py
 banco_relatorios.json
 memory/test_credentials.md

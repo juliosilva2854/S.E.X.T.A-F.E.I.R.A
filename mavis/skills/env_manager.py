@@ -86,7 +86,7 @@ def update(patch: Dict[str, str]) -> Dict[str, Any]:
         os.environ[k] = str(v).strip()
     # Backup + write
     if ENV_FILE.exists():
-        bak = ENV_FILE.with_suffix(".env.bak")
+        bak = ENV_FILE.parent / ".env.bak"
         bak.write_text(ENV_FILE.read_text(encoding="utf-8"), encoding="utf-8")
     lines = [f"{k}={v}" for k, v in raw.items()]
     ENV_FILE.write_text("\n".join(lines) + "\n", encoding="utf-8")

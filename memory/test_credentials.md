@@ -1,23 +1,15 @@
-# Sexta-feira (Mavis) — Test credentials
+# Credenciais de Teste — MAVIS
 
-## App / Preview
-- URL preview: https://project-scanner-47.preview.emergentagent.com
-- Página principal da tarefa: /analytics (PÚBLICA — sem login)
+> Este painel NÃO possui login de usuário (uso pessoal local/preview).
+> Segredos reais ficam APENAS em `backend/.env` (fora do Git, via .gitignore).
 
-## Login Field Control (usado pelo RPA desktop — NÃO é login do app)
-- Email: julio.bernardino@tolife.com.br
-- Senha: JulioCesar701!
+## Painel
+- Sem autenticação. Acesso direto pela URL do preview.
 
-## Gemini / IA
-- CHAVE_GEMINI configurada no backend/.env (chat/IA ATIVO).
-- Modelo: gemini-2.5-flash
+## Página pública (Analytics) — somente leitura
+- Gerada em runtime na página "Compartilhar" (`/share`).
+- A URL contém `?s=<id>&t=<token>`. O token expira após N tentativas inválidas.
+- Backend: tokens guardados só como hash em `public_tokens.json` (gitignored).
 
-## MongoDB
-- MONGO_URL=mongodb://localhost:27017
-- DB_NAME=sexta_feira
-
-## WhatsApp
-- WHATSAPP_NUMERO=5511989442854
-- WHATSAPP_GRUPO=Resumos - ToLife
-- Envio automático = desktop-only (Playwright/web.whatsapp.com). No app hospedado usa-se o
-  botão "Compartilhar" (link wa.me + download do PDF).
+## Variáveis sensíveis (ver `backend/.env` — NÃO versionar)
+- CHAVE_GEMINI, FIELDCONTROL_EMAIL, FIELDCONTROL_SENHA, WHATSAPP_NUMERO, WAHA_API_KEY
