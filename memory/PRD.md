@@ -18,7 +18,14 @@ https://mavis-cloud.preview.emergentagent.com
 
 ## O que foi feito
 
-### 10/06/2026 (parte 5) — Google OAuth NATIVO (zero Emergent) + painel Acesso
+### 10/06/2026 (parte 6) — Deploy self-host (zero Emergent) + Encerrar sessões
+- **Botão "Encerrar sessões"** no painel `/access`: `POST /api/users/{user_id}/logout` revoga todas as sessões de um usuário (sair de todos os dispositivos). Testado (revogou e invalidou token).
+- **Persistência de dados configurável**: `MAVIS_DATA_DIR` em `paths.py` (todos os `ARQUIVO_*` + geocode derivam dela). Permite volume persistente na nuvem. Default = APP_ROOT (local intacto).
+- **Pacote de deploy `/app/deploy/`** (Docker Compose + Caddy, HTTPS automático): `Dockerfile.backend`, `Dockerfile.frontend`, `Caddyfile` (env `SITE_ADDRESS`), `docker-compose.yml` (VPS, portas 80/443), `docker-compose.pc.yml` (PC + Cloudflare Tunnel, expõe `127.0.0.1:8080`), `backend.env.example`, `entrypoint.sh` (semeia /data). `.dockerignore` na raiz.
+- **Guias**: `DEPLOY_NUVEM.md` (VPS) e `DEPLOY_PC_CLOUDFLARE.md` (rodar no PC do Julio via Cloudflare Tunnel, sem abrir portas). Descoberto que `sexta-feira.py` usa mavis IN-PROCESS → login no painel não quebra a automação de voz/desktop.
+- Arquitetura PC escolhida: app **nativo** (IS_CLOUD=false, automação + planilha) publica → painel **Docker** (IS_CLOUD=true, dashboard protegido, exposto pelo túnel). Domínio: `ia.sconnecta.com.br`.
+
+
 - **Removida a dependência da Emergent no login Google.** Agora é OAuth 2.0 nativo (Authorization Code): o backend troca o `code` direto em `oauth2.googleapis.com/token` e lê o e-mail em `googleapis.com/oauth2/v2/userinfo`. Credenciais próprias do usuário em `backend/.env` (`GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`, client Web do projeto `mavis-system`). Redirect dinâmico `window.location.origin + /auth/google`. `/api/auth/config` expõe `google_enabled` + `google_client_id`.
 - **Frontend**: `Login.jsx` monta a URL de consentimento do Google (scope `openid email profile`, `state` p/ CSRF); rota `/auth/google` (`AuthCallback`) troca o code via `POST /api/auth/google {code, redirect_uri}`. Botão Google só aparece se `google_enabled`.
 - **Painel "Acesso"** (`/access`, item na sidebar): gerencia a allowlist de e-mails Google (add/remove) e mostra "Últimos acessos" (`GET /api/users`, campo `last_login` gravado em cada login). Aviso visual quando em modo local.

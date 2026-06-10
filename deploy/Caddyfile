@@ -1,5 +1,7 @@
-# HTTPS automático (Let's Encrypt). Requer DNS apontando para o servidor + portas 80/443 abertas.
-{$DOMAIN:ia.sconnecta.com.br} {
+# SITE_ADDRESS controla o modo:
+#  - "ia.sconnecta.com.br"  -> Caddy emite HTTPS sozinho (deploy em VPS com portas 80/443)
+#  - ":8080" (padrão)        -> HTTP simples (use atrás do Cloudflare Tunnel, sem abrir portas)
+{$SITE_ADDRESS::8080} {
 	encode gzip
 
 	# API + WebSocket de logs vão para o backend

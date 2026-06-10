@@ -29,7 +29,7 @@ services:
         REACT_APP_BACKEND_URL: https://ia.sconnecta.com.br
     restart: unless-stopped
     environment:
-      DOMAIN: ia.sconnecta.com.br
+      SITE_ADDRESS: ia.sconnecta.com.br
     ports:
       - "80:80"
       - "443:443"

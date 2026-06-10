@@ -1,0 +1,51 @@
+# Variante para rodar no SEU PC, exposto via Cloudflare Tunnel (sem abrir portas no roteador).
+# O Caddy serve em HTTP interno (:8080) e o cloudflared publica em https://ia.sconnecta.com.br.
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+
+  backend:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.backend
+    restart: unless-stopped
+    env_file:
+      - ./backend.env
+    environment:
+      MONGO_URL: mongodb://mongo:27017
+      MAVIS_DATA_DIR: /data
+    depends_on:
+      - mongo
+    volumes:
+      - mavis_data:/data
+
+  web:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.frontend
+      args:
+        REACT_APP_BACKEND_URL: https://ia.sconnecta.com.br
+    restart: unless-stopped
+    # SITE_ADDRESS não definido -> Caddy escuta HTTP em :8080 (sem TLS; o Cloudflare faz o HTTPS)
+    # Porta local 8080 também exposta: permite o app LOCAL publicar dados (CLOUD_PUBLISH_URL=http://localhost:8080)
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      - backend
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel run
+    environment:
+      # Pegue o token em Cloudflare Zero Trust > Networks > Tunnels > (seu túnel) > Connector token
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN}
+    depends_on:
+      - web
+
+volumes:
+  mongo_data:
+  mavis_data:
