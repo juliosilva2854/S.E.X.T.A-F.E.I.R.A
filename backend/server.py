@@ -11,6 +11,7 @@ import logging
 import uuid
 import io
 import secrets
+import hmac
 import requests
 import httpx
 from datetime import datetime, timezone, timedelta
@@ -2109,7 +2110,7 @@ async def auth_google(body: GoogleAuthIn, response: Response):
 @api.post("/auth/password")
 async def auth_password(body: PasswordAuthIn, response: Response):
     """Login por senha compartilhada (ADMIN_PASSWORD)."""
-    if not ADMIN_PASSWORD or body.password != ADMIN_PASSWORD:
+    if not ADMIN_PASSWORD or not hmac.compare_digest(body.password, ADMIN_PASSWORD):
         raise HTTPException(401, "Senha incorreta")
     user_id = "admin_local"
     if not await db.users.find_one({"user_id": user_id}, {"_id": 0}):

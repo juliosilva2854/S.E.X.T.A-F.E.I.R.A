@@ -18,6 +18,16 @@ https://mavis-cloud.preview.emergentagent.com
 
 ## O que foi feito
 
+### 10/06/2026 (parte 4) — Arquitetura híbrida: Auth mista na nuvem + Publish local→nuvem
+- **Flag `IS_CLOUD`** (`backend/.env`): `false`=local (painel 100% aberto, sem login — automação desktop intacta); `true`=nuvem (painel admin exige login). Default `false`.
+- **Guard condicional** (`cloud_auth_guard` middleware em `server.py`): quando `IS_CLOUD=true`, todo `/api/*` exige sessão, EXCETO prefixos livres `/api/auth/`, `/api/public/` (token de leitura) e `/api/publish` (X-Publish-Key). `/p/analytics` continua público.
+- **Auth mista** (Emergent Managed Google Auth + senha): endpoints `GET /api/auth/config`, `POST /api/auth/google` (valida allowlist), `POST /api/auth/password` (ADMIN_PASSWORD, compare_digest), `GET /api/auth/me`, `POST /api/auth/logout`. Sessão em Mongo (`user_sessions`, cookie httpOnly 7d ou Bearer). Usuários em `users` (user_id UUID, projeção `{_id:0}`).
+- **Allowlist de e-mails Google**: `GET/POST/DELETE /api/allowed-emails` (Mongo `allowed_emails`). Seed automático de `SEED_ADMIN_EMAIL=julio.silva2854@gmail.com` no startup. Julio pode adicionar/remover e-mails.
+- **Publish local→nuvem**: `POST /api/publish` (protegido por `X-Publish-Key`) grava `banco_de_dados/banco_relatorios/sheets_cache/geocode_cache`. `_publish_to_cloud()` envia esses arquivos para `CLOUD_PUBLISH_URL` após cada sync do Google Sheets (`/api/sheets/sync` + auto-sync). `POST /api/publish/now` dispara manualmente. Usuário fará deploy fora da Emergent (domínio próprio) → setar `CLOUD_PUBLISH_URL` no app local e `IS_CLOUD=true` no deploy.
+- **Frontend**: `AuthProvider`+`ProtectedRoute` (`src/auth/AuthContext.jsx`), página `/login` (Google + senha), `AuthCallback` (troca `session_id` do fragmento), botão Sair no rodapé da sidebar (só na nuvem). `api.js` com `withCredentials:true`. CORS com `allow_origin_regex` p/ credenciais.
+- **Testes**: `backend/tests/test_mixed_auth.py` (13/13 ✅) + Playwright (login/dashboard/logout/public-gate ✅). Relatório `test_reports/iteration_1.json`. Zero bugs.
+
+
 ### 10/06/2026 (parte 3) — Segurança do repo + Página Analytics pública (token)
 - **Segurança / GitHub**: removidos do working tree `backend/.env.env.bak` (continha CHAVE_GEMINI real + senha FieldControl) e `frontend/.env.production.local`. Redigidas credenciais em `.emergent/summary.txt` e `memory/test_credentials.md`. `.gitignore` reforçado (`*.bak`, `.env.*`, `*.env.*`, `public_tokens.json`, `sheets_cache.json`). Corrigido bug do `env_manager` que gerava `.env.env.bak` (agora `.env.bak`). NOTA: a chave Gemini exposta ainda vive no HISTÓRICO do git → usuário deve ROTACIONAR a chave (AI Studio) e trocar a senha FieldControl.
 - **Página pública Analytics (somente leitura + extração)**: nova skill `mavis/skills/public_access.py` (tokens guardados como hash SHA-256, brute-force: revoga após N tentativas inválidas). Endpoints: `GET /api/public/validate`, `GET /api/public/analytics/all`, `/month/{m}`, `/export` (csv/xlsx/pdf), admin `GET/POST/DELETE /api/public-tokens` + `/revoke` + `/reactivate`. Store em `public_tokens.json` (gitignored).
