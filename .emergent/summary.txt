@@ -1,141 +1,135 @@
-<analysis>**original_problem_statement**: 
-App full-stack (React + FastAPI + MongoDB) chamado Mavis/Sexta-Feira. O objetivo é implementar a página de Analytics com mapa de calor e exportação de dados (CSV, Excel, PDF). 
-P0 — Backend: Expor endpoints em  conectando as funções já prontas em .
-P0 — Frontend: Adicionar dependências (, , ). Reconstruir  com painel de filtros, KPIs, gráficos, mapa de calor clássico e botões de exportação.
+<analysis>**original_problem_statement:** 
+The user wants a hybrid architecture for their MAVIS personal assistant application. The main app must run locally for desktop automation tasks (WAHA, Playwright, PyAutoGUI, local Google credentials). A deployed cloud version should *only* expose the Public Analytics page () via token access. The rest of the cloud admin dashboard needs to be hidden behind a mixed authentication system (Google Auth + Password). The local application must automatically push/publish data to the cloud whenever local Google Sheets are synced.
 
-**User's preferred language**: Portuguese (You MUST automatically detect the user's primary language from their messages inside the <trajectory> tag and INSTRUCT next agent to respond in the user's preferred language only - Portuguese).
+**User's preferred language:** **PORTUGUESE** (You MUST automatically detect the user's primary language from their messages inside the <trajectory> tag and INSTRUCT next agent to respond in the user's preferred language only)
 
 **what currently exists?** 
-Backend (FastAPI) and Frontend (React) running. MongoDB connected. The previous agent successfully installed all required dependencies (,  for backend; , ,  for frontend). The backend logic for generating analytics data, geocoding coordinates (with Nominatim caching), and exporting reports has been successfully created in . The API routes in  and the Frontend UI in  still need to be built/updated.
+A full-stack personal assistant app (React, FastAPI, MongoDB, JSON data files) that operates primarily locally. It has a token-based public Analytics page () and a Share admin page (). 
 
-**Last working item**:
-    - Last item agent was working: Creating the internal backend logic for map data, geocoding, and data exportation. It created  and , and updated . Next step is wiring these up to FastAPI routes and rebuilding the React frontend.
-    - Status: IN PROGRESS
-    - Agent Testing Done: N
-    - Which testing method agent to use? both (testing_agent_v3_fork after full backend+frontend implementation)
-    - User Testing Done: N
+**Last working item:**
+- **Last item agent was working:** Planning the implementation of mixed authentication (Google Auth + Email/Password via ) and a secure Publish endpoint. The agent gathered context and issued an  tool call to get user confirmation on the plan.
+- **Status:** BLOCKED (Waiting for human response to )
+- **Agent Testing Done:** N
+- **Which testing method agent to use?** Both backend and frontend testing agents (Auth implementation is critical and complex).
+- **User Testing Done:** N
 
-**All Pending/In progress Issue list**:  
-  - Issue 1: Expose Backend Endpoints in  (P0)
-     - Attempted fixes: Functions are ready in  and , but they need to be imported and exposed as endpoints in .
-     - Next debug checklist: Edit  to add , , , and . 
-     - Why fix this issue and what will be achieved with the fix? Required for the frontend to consume the analytics data.
-     - Status: NOT STARTED
-     - Is recurring issue? N
-     - Should Test frontend/backend/both after fix? backend (via curl)
-     - Blocked on other issue: None
-  - Issue 2: Frontend UI Rewrite (P0)
-     - Attempted fixes: None yet. Dependencies are installed.
-     - Next debug checklist: Completely rebuild . Implement Shadcn-style UI with sidebar/filters, top KPI cards, charts (Bar/Line), Leaflet heatmap (using the  API), and export buttons (CSV, Excel, PDF).
-     - Why fix this issue and what will be achieved with the fix? This is the core visual requirement of the user request.
-     - Status: NOT STARTED
-     - Is recurring issue? N
-     - Should Test frontend/backend/both after fix? both
-     - Blocked on other issue: Issue 1 (Backend Endpoints)
+**All Pending/In progress Issue list:**
+  - **Issue 1:** Implement Mixed Authentication for Cloud Deployment (P0)
+     - **Attempted fixes:** Context gathered and playbooks previously reviewed. The current agent invoked  to propose the plan. No code changes made yet.
+     - **Next debug checklist:** Implement Auth logic in  and React /Context using . **Crucial:** Ensure auth is conditionally enforced (e.g., via  or  variable) so the local instance remains entirely open and frictionless, while the deployed instance requires login.
+     - **Why fix this issue and what will be achieved with the fix?** Secures the cloud deployment from unauthorized access without breaking local desktop automation.
+     - **Status:** IN PROGRESS (Pending user approval)
+     - **Is recurring issue?** N
+     - **Should Test frontend/backend/both after fix?** Both
+     - **Blocked on other issue:** None
 
-**In progress Task List**:
-  - Task 1: Complete the full Analytics Page Feature Integration (P0)
-     - Where to resume:  (for API routes) and  (for UI and fetching).
-     - What will be achieved with this? End-to-end functionality for the heatmap and exporting analytics.
-     - Status: IN PROGRESS
-     - Should Test frontend/backend/both after fix? both
-     - Blocked on something: None
+  - **Issue 2:** Secure Cloud Sync / Publish Endpoint (P0)
+     - **Attempted fixes:** None yet.
+     - **Next debug checklist:** Create a backend endpoint (e.g., ) protected by . Modify the local sync logic (Google Sheets sync in backend) to make an external HTTP POST request to the deployed app's URL to push , , etc.
+     - **Why fix this issue and what will be achieved with the fix?** Allows the cloud deployment to display up-to-date Analytics without running heavy PC-specific processes or holding API secrets in the cloud.
+     - **Status:** NOT STARTED
+     - **Is recurring issue?** N
+     - **Should Test frontend/backend/both after fix?** Backend
+     - **Blocked on other issue:** None
+
+**In progress Task List:**
+  - **Task 1:** Mixed Authentication Setup
+     - **Where to resume:** Read the human response to the pending  call. Implement standard  playbooks for Google Auth and Password JWT. Modify  (auth middleware/routes) and  (login guards conditionally enabled).
+     - **What will be achieved with this?** Protects the cloud dashboard.
+     - **Status:** BLOCKED (Pending human approval of plan)
+     - **Should Test frontend/backend/both after fix?** Both
+     - **Blocked on something:** Human response.
 
 **Upcoming and Future Tasks**
-  Upcoming Tasks:
-  - P1: **Documentation**: Update  with the newly implemented map and export features.
-  
-  Future Tasks:
-  - P1: **Background Execution**: Solução para rodar em background sem terminais abertos (Docker Compose ou serviço Windows / PWA / Electron).
+- P0: Implement the automatic push/publish mechanism from the local app to the cloud when syncing Google Sheets.
+- P1: Ensure environment flags ( or similar) are correctly implemented across the stack so the local build does not enforce login, while the cloud build does.
 
 **Completed work in this session**
-- Confirmed the execution plan with the user via .
-- Installed backend dependencies (, ).
-- Installed frontend dependencies (, , ).
-- Created  to handle Nominatim geolocation safely.
-- Created  to handle CSV/Excel/PDF generation.
-- Updated  with methods for filtering and preparing map data.
+- Agent analyzed the workspace, reviewed , and identified frontend components to propose an execution plan.
+- (Previously completed in handoff): GitHub secrets scrubbed,  and  pages built,  documentation generated.
 
 **Earlier issues found/mentioned but not fixed**
-None.
+   - **Issue 1:** Git history still contains the old Gemini Key and FieldControl password.
+     - **Debug checklist:** User previously advised to use Save to GitHub to create a fresh repository to bypass push protection. No code fix needed, but remain aware if git push issues arise.
+     - **Why to solve this issue and what will be achieved with this?** Ensures no blocked deployments due to secret leaks.
+     - **Should Test frontend/backend/both after fix:** NA
+     - **Is recurring issue?** N
 
 **Known issue recurrence from previous fork**
-  - Issue recurrence in previous fork: DO NOT modify , or  (caused crash in previous sessions). Manter cache de geocoding para respeitar rate limit do Nominatim.
-  - Recurrence count: 1
-  - Status: RESOLVED (in geocoding implementation, but must strictly adhere to this constraint moving forward).
+  - Recurrence count: 0
+  - Status: NA
 
 **Code Architecture**
 /app/
 ├── backend/
-│   ├── server.py                   # Needs new /api/analytics/... endpoints
+│   ├── server.py (FastAPI, 80 endpoints)
+│   ├── .env
+│   └── mavis/ (Core logic, brain, memory, skills)
+│       └── skills/public_access.py (Token generation/validation logic)
 ├── frontend/
-│   ├── package.json
+│   ├── .env
 │   └── src/
+│       ├── App.js (Router)
 │       └── pages/
-│           └── Analytics.jsx       # Needs complete rebuild
-├── mavis/
-│   └── skills/
-│       ├── analytics.py            # Contains internal analytics logic (Updated)
-│       ├── analytics_export.py     # Contains export logic (Created)
-│       └── geocoding.py            # Contains Nominatim caching/logic (Created)
-├── memory/
-│   └── PRD.md
+│           ├── PublicAnalytics.jsx (Public read-only view)
+│           └── Share.jsx (Admin token manager)
+├── *.json (banco_de_dados.json, etc. - Local data stores)
+├── RODAR_LOCAL.md
+└── scripts/ (Batch scripts to start/stop the stack)
 
 **Key Technical Concepts**
-React.js, FastAPI, MongoDB, Leaflet/react-leaflet (Mapping/Heatmap), Geocoding (Nominatim), Data Exporting (CSV/Excel/PDF).
+React, FastAPI, MongoDB (metadata/tokens), JSON files (primary DB for heavy data), Gemini GenAI, WAHA (WhatsApp automation Docker), Playwright RPA, Hybrid Cloud/Local architecture.
 
 **key DB schema**
-  - sexta_feira: {{rotas_km, unidades_visitadas}}
+  - JSON files:  acts as the primary data store.
+  - MongoDB : { token_hash, name, scope, usage_count, is_active }
 
 **changes in tech stack**
-  - Added Backend packages: , .
-  - Added Frontend packages: , , , .
+  - Pending integration of  for Cloud Mixed Auth.
 
-**All files of reference** 
-  -  (needs endpoints)
-  -  (needs complete UI rewrite)
-  -  (created to fetch lat/long from addresses safely)
-  -  (created to generate PDF/XLSX/CSV)
-  -  (updated to bridge logic)
+**All files of reference**
+  - 
+  - 
+  - 
 
-**Areas that need refactoring**: 
--  needs a complete UI rewrite to a premium and professional layout following the Shadcn ecosystem. Avoid generic AI Slop designs.
+**Areas that need refactoring**
+  - An environment variable check () needs to be implemented cleanly across frontend and backend to toggle Authentication ON for cloud deployment and OFF for local PC execution.
 
-**key api endpoints** (To be added to )
-- 
-- 
-- 
-- 
+**key api endpoints**
+  -  (Frontend public route)
+  -  (Backend validate token)
 
-**Critical Info for New Agent** 
-- User approved the plan with sim, vai com tudo. You can proceed straight to implementing the remaining parts: exposing the endpoints in  and completely rewriting .
-- ALWAYS respond in Portuguese.
-- **CRITICAL RESTRICTION**: Do not alter  or  dependencies under any circumstances. Ensure the Nominatim API limits are respected by relying on the cache logic implemented in .
+**Critical Info for New Agent**
+  - **PENDING HUMAN MESSAGE:** The agent just called . Your very first step must be to read the user's response to this plan and execute accordingly.
+  - **Hybrid Setup is Critical:** Do NOT break the local functionality. The local app relies on desktop-only integrations (WAHA Docker, PyAutoGUI, Chrome Playwright, local  files). The Cloud Deployment must act *only* as a secure dashboard.
+  - **Conditional Login:** The login implementation MUST NOT block the user when they run the app locally. Use a flag like  to bypass authentication for local runs.
 
-**documents and test reports created in this job** 
-None yet.
+**documents and test reports created in this job**
+  -  (Created in previous fork)
+  -  (Updated in previous fork)
 
 **Last 10 User Messages and any pending HUMAN messages** 
- - sim, vai com tudo (COMPLETED - User authorized execution)
- - Please use ask_human tool and confirm your plan now. (COMPLETED)
- - vai (COMPLETED)
+ - **Pending Human Message:** The user needs to respond to the  tool call confirming the execution plan for the auth and publish endpoints.
+ - User: Please use ask_human tool and confirm your plan now. (Completed - agent fired the tool)
+ - User: [Provided original Handoff Summary] (Analyzed)
 
 **Project Health Check:**
-Healthy.
+Healthy/Running.
 
 **3rd Party Integrations** 
- - Gemini Flash — uses Emergent LLM Key
- - Nominatim (OpenStreetMap for Geocoding) — requires No Key (but respect rate limits/cache).
+  - Gemini (User API Key in )
+  - Google Auth (Emergent Managed) - *Pending implementation*
+  - WAHA / WhatsApp (Local Docker based)
 
 **Testing status**
-  - Testing agent used after significant changes: NO (Pending implementation)
+  - Testing agent used after significant changes: NO (No changes made yet in this specific session)
   - Troubleshoot agent used after agent stuck in loop: NO
-  - Test files created: []
-  - Known regressions: []
+  - Test files created: None
+  - Known regressions: None
 
 **Credentials to test flow:**
-Email: (redigido — ver backend/.env)
-Senha: (redigido — ver backend/.env)
+  - 
+  - 
 
 **What agent forgot to execute**
-The agent prepared all the internal logic in the  directory but did not finish creating the FastAPI routes in  or rebuilding the React frontend in  before the session ended. The next agent must pick up immediately from here.</analysis>
+None. The agent successfully analyzed the workspace and properly halted execution via  to validate the plan with the user before writing any code.</analysis>
