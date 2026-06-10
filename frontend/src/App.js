@@ -1,5 +1,5 @@
 import React from "react";
-import { Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "sonner";
 import Layout from "./components/Layout";
 import Overview from "./pages/Overview";
@@ -34,15 +34,11 @@ import AuthCallback from "./pages/AuthCallback";
 import { AuthProvider, ProtectedRoute } from "./auth/AuthContext";
 
 function AppRouter() {
-  const location = useLocation();
-  // Volta do OAuth (session_id no fragmento) — processa ANTES das rotas protegidas
-  if (location.hash?.includes("session_id=")) {
-    return <AuthCallback />;
-  }
   return (
     <Routes>
       <Route path="/p/analytics" element={<PublicAnalytics />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/auth/google" element={<AuthCallback />} />
       <Route
         element={
           <ProtectedRoute>

@@ -61,7 +61,12 @@ ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
 PUBLISH_KEY = os.environ.get("PUBLISH_KEY", "")
 CLOUD_PUBLISH_URL = os.environ.get("CLOUD_PUBLISH_URL", "").rstrip("/")
 SEED_ADMIN_EMAIL = os.environ.get("SEED_ADMIN_EMAIL", "julio.silva2854@gmail.com").lower()
-EMERGENT_SESSION_API = "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data"
+
+# Google OAuth NATIVO (credenciais próprias do usuário — ZERO dependência da Emergent)
+GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "")
+GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "")
+GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
+GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v2/userinfo"
 
 # Arquivos de dados que são publicados local -> nuvem
 PUBLISH_FILES = {
@@ -2034,7 +2039,8 @@ async def public_tokens_delete(tid: str):
 # AUTENTICAÇÃO MISTA (Google + Senha) — somente aplicada quando IS_CLOUD=true
 # ==============================================================
 class GoogleAuthIn(BaseModel):
-    session_id: str
+    code: str
+    redirect_uri: str
 
 
 class PasswordAuthIn(BaseModel):
@@ -2066,24 +2072,48 @@ async def _create_session(user_id: str) -> str:
 
 @api.get("/auth/config")
 async def auth_config():
-    """Diz ao frontend se deve exigir login (nuvem) ou não (local)."""
-    return {"is_cloud": IS_CLOUD, "password_enabled": bool(ADMIN_PASSWORD)}
+    """Diz ao frontend se deve exigir login (nuvem) ou não (local), e quais métodos existem."""
+    return {
+        "is_cloud": IS_CLOUD,
+        "password_enabled": bool(ADMIN_PASSWORD),
+        "google_enabled": bool(GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET),
+        "google_client_id": GOOGLE_CLIENT_ID,
+    }
 
 
 @api.post("/auth/google")
 async def auth_google(body: GoogleAuthIn, response: Response):
-    """Troca o session_id da Emergent Auth por uma sessão local, validando allowlist."""
+    """Google OAuth NATIVO: troca o authorization code direto com o Google (sem Emergent)."""
+    if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET:
+        raise HTTPException(503, "Google OAuth não configurado no servidor")
     try:
         async with httpx.AsyncClient(timeout=15) as client:
-            r = await client.get(EMERGENT_SESSION_API, headers={"X-Session-ID": body.session_id})
+            tok = await client.post(GOOGLE_TOKEN_URL, data={
+                "code": body.code,
+                "client_id": GOOGLE_CLIENT_ID,
+                "client_secret": GOOGLE_CLIENT_SECRET,
+                "redirect_uri": body.redirect_uri,
+                "grant_type": "authorization_code",
+            })
+            if tok.status_code != 200:
+                raise HTTPException(401, f"Falha ao trocar código com o Google: {tok.text[:160]}")
+            access_token = tok.json().get("access_token")
+            if not access_token:
+                raise HTTPException(401, "Google não retornou access_token")
+            ui = await client.get(GOOGLE_USERINFO_URL,
+                                  headers={"Authorization": f"Bearer {access_token}"})
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(502, f"Falha ao validar sessão Google: {e}")
-    if r.status_code != 200:
-        raise HTTPException(401, "Sessão Google inválida ou expirada")
-    data = r.json()
+        raise HTTPException(502, f"Falha ao validar com o Google: {e}")
+    if ui.status_code != 200:
+        raise HTTPException(401, "Não foi possível obter os dados da conta Google")
+    data = ui.json()
     email = (data.get("email") or "").strip().lower()
     if not email:
         raise HTTPException(401, "Não foi possível obter o e-mail da conta Google")
+    if data.get("verified_email") is False:
+        raise HTTPException(401, "E-mail Google não verificado")
     if not await db.allowed_emails.find_one({"email": email}):
         raise HTTPException(403, "E-mail não autorizado a acessar este painel")
     user = await db.users.find_one({"email": email}, {"_id": 0})

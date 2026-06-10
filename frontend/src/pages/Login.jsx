@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import { Lightning, GoogleLogo, Lock, SignIn } from "@phosphor-icons/react";
 import { api } from "../api";
 import { useAuth } from "../auth/AuthContext";
@@ -10,11 +11,31 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [cfg, setCfg] = useState({ google_enabled: false, password_enabled: true, google_client_id: "" });
+
+  useEffect(() => {
+    api.get("/auth/config").then(({ data }) => setCfg(data)).catch(() => {});
+  }, []);
 
   const googleLogin = () => {
+    if (!cfg.google_enabled || !cfg.google_client_id) {
+      toast.error("Login Google ainda não configurado no servidor.");
+      return;
+    }
     // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
-    const redirectUrl = window.location.origin + "/";
-    window.location.href = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(redirectUrl)}`;
+    const redirectUri = window.location.origin + "/auth/google";
+    const state = Math.random().toString(36).slice(2);
+    sessionStorage.setItem("oauth_state", state);
+    const params = new URLSearchParams({
+      client_id: cfg.google_client_id,
+      redirect_uri: redirectUri,
+      response_type: "code",
+      scope: "openid email profile",
+      state,
+      access_type: "online",
+      prompt: "select_account",
+    });
+    window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
   };
 
   const passwordLogin = async (e) => {
@@ -45,19 +66,23 @@ export default function Login() {
           // painel restrito · autenticação obrigatória
         </p>
 
-        <button
-          data-testid="login-google-button"
-          onClick={googleLogin}
-          className="w-full inline-flex items-center justify-center gap-2 bg-white text-[#050505] hover:bg-gray-200 font-bold uppercase tracking-wider text-xs px-4 py-3 rounded transition-colors"
-        >
-          <GoogleLogo size={18} weight="bold" /> Entrar com Google
-        </button>
+        {cfg.google_enabled && (
+          <>
+            <button
+              data-testid="login-google-button"
+              onClick={googleLogin}
+              className="w-full inline-flex items-center justify-center gap-2 bg-white text-[#050505] hover:bg-gray-200 font-bold uppercase tracking-wider text-xs px-4 py-3 rounded transition-colors"
+            >
+              <GoogleLogo size={18} weight="bold" /> Entrar com Google
+            </button>
 
-        <div className="flex items-center gap-3 my-6">
-          <div className="flex-1 h-px bg-[#27272A]" />
-          <span className="text-gray-600 text-[10px] uppercase tracking-widest">ou senha</span>
-          <div className="flex-1 h-px bg-[#27272A]" />
-        </div>
+            <div className="flex items-center gap-3 my-6">
+              <div className="flex-1 h-px bg-[#27272A]" />
+              <span className="text-gray-600 text-[10px] uppercase tracking-widest">ou senha</span>
+              <div className="flex-1 h-px bg-[#27272A]" />
+            </div>
+          </>
+        )}
 
         <form onSubmit={passwordLogin}>
           <label className="text-[10px] uppercase tracking-widest text-gray-500 mb-1 block">Senha do painel</label>

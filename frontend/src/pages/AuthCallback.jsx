@@ -4,6 +4,8 @@ import { Lightning } from "@phosphor-icons/react";
 import { api } from "../api";
 import { useAuth } from "../auth/AuthContext";
 
+// Callback do Google OAuth NATIVO. O Google redireciona para {origin}/auth/google?code=...&state=...
+// REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
 export default function AuthCallback() {
   const navigate = useNavigate();
   const { setUser } = useAuth();
@@ -14,20 +16,30 @@ export default function AuthCallback() {
     if (processed.current) return;
     processed.current = true;
 
-    const hash = window.location.hash || "";
-    const sid = new URLSearchParams(hash.replace(/^#/, "")).get("session_id");
-    if (!sid) { navigate("/login", { replace: true }); return; }
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
+    const state = params.get("state");
+    const oauthErr = params.get("error");
+
+    if (oauthErr) { setError(`Google: ${oauthErr}`); setTimeout(() => navigate("/login", { replace: true }), 2500); return; }
+    if (!code) { navigate("/login", { replace: true }); return; }
+    if (state && sessionStorage.getItem("oauth_state") && state !== sessionStorage.getItem("oauth_state")) {
+      setError("Estado inválido (proteção CSRF). Tente novamente.");
+      setTimeout(() => navigate("/login", { replace: true }), 2500);
+      return;
+    }
+    sessionStorage.removeItem("oauth_state");
 
     (async () => {
       try {
-        const { data } = await api.post("/auth/google", { session_id: sid });
+        const redirectUri = window.location.origin + "/auth/google";
+        const { data } = await api.post("/auth/google", { code, redirect_uri: redirectUri });
         setUser(data.user);
-        // limpa o fragmento e vai pro painel
         window.history.replaceState(null, "", "/");
         navigate("/", { replace: true });
       } catch (err) {
         setError(err?.response?.data?.detail || "Falha ao autenticar com o Google.");
-        setTimeout(() => navigate("/login", { replace: true }), 2500);
+        setTimeout(() => navigate("/login", { replace: true }), 3000);
       }
     })();
     // eslint-disable-next-line

@@ -9,9 +9,16 @@
 
 ## Login do painel (apenas quando IS_CLOUD=true)
 - **Login por senha**: campo "Senha do painel" → `ADMIN_PASSWORD=fVcuKJmpJ6_TbyF3`
-- **Login Google (Emergent Auth)**: allowlist de e-mails. Seed inicial: `julio.silva2854@gmail.com`
-  - Allowlist gerenciada via `GET/POST/DELETE /api/allowed-emails`.
+- **Login Google (OAuth NATIVO — credenciais próprias, ZERO Emergent)**: troca de código direto com `oauth2.googleapis.com`.
+  - `GOOGLE_CLIENT_ID` (a definir) + `GOOGLE_CLIENT_SECRET` em `backend/.env`.
+  - Redirect URI dinâmico: `window.location.origin + /auth/google` (precisa estar registrado no Google Cloud Console).
+  - Allowlist de e-mails. Seed inicial: `julio.silva2854@gmail.com`. Gerida via `GET/POST/DELETE /api/allowed-emails` ou painel `/access`.
 - Sessão: cookie httpOnly `session_token` (7 dias) OU header `Authorization: Bearer <session_token>`.
+
+## Google Cloud Console (OAuth client do usuário)
+- Domínio de produção: `https://ia.sconnecta.com.br`
+- Authorized JavaScript origins: `https://ia.sconnecta.com.br`, `https://mavis-cloud.preview.emergentagent.com`
+- Authorized redirect URIs: `https://ia.sconnecta.com.br/auth/google`, `https://mavis-cloud.preview.emergentagent.com/auth/google`
 
 ## Publicação local → nuvem
 - Endpoint `POST /api/publish` protegido por header `X-Publish-Key`.

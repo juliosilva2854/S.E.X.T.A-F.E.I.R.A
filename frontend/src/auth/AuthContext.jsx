@@ -29,8 +29,8 @@ export function AuthProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    // Volta de OAuth: deixa o AuthCallback trocar o session_id antes de checar /me
-    if (window.location.hash?.includes("session_id=")) {
+    // Volta do OAuth Google: deixa o /auth/google trocar o code antes de checar /me
+    if (window.location.pathname === "/auth/google") {
       setLoading(false);
       return;
     }
