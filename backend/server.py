@@ -10,12 +10,16 @@ import asyncio
 import logging
 import uuid
 import io
+import secrets
+import requests
+import httpx
 from datetime import datetime, timezone, timedelta
 from typing import List, Optional, Dict, Any
 from pathlib import Path
 
 from fastapi import FastAPI, APIRouter, HTTPException, WebSocket, WebSocketDisconnect, Response, UploadFile, File, Form, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from dotenv import load_dotenv
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -35,7 +39,7 @@ from mavis.core import brain as brain_core
 from mavis.core import router as router_core
 from mavis.core.paths import (
     ARQUIVO_MEMORIA, ARQUIVO_DB_ROTAS, ARQUIVO_RELATORIOS,
-    ARQUIVO_TOKEN_GOOGLE, ARQUIVO_CREDENCIAIS_GOOGLE,
+    ARQUIVO_TOKEN_GOOGLE, ARQUIVO_CREDENCIAIS_GOOGLE, ARQUIVO_SHEETS_CACHE,
 )
 from mavis.skills import system_info as sys_skill
 from mavis.skills import news_weather as nw_skill
@@ -47,6 +51,24 @@ CHAVE_GEMINI = os.environ.get("CHAVE_GEMINI", "")
 GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
 NOME_IA = os.environ.get("NOME_IA", "Sexta-feira")
 VOZ_SINTETIZADOR = os.environ.get("VOZ_SINTETIZADOR", "pt-BR-ThalitaNeural")
+
+# ---------- Híbrido Cloud/Local ----------
+# IS_CLOUD=true → instância de nuvem: painel admin exige login (Google + senha).
+# IS_CLOUD=false → execução local no PC: tudo aberto, sem login (automação desktop).
+IS_CLOUD = os.environ.get("IS_CLOUD", "false").lower() in ("1", "true", "yes", "on")
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
+PUBLISH_KEY = os.environ.get("PUBLISH_KEY", "")
+CLOUD_PUBLISH_URL = os.environ.get("CLOUD_PUBLISH_URL", "").rstrip("/")
+SEED_ADMIN_EMAIL = os.environ.get("SEED_ADMIN_EMAIL", "julio.silva2854@gmail.com").lower()
+EMERGENT_SESSION_API = "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data"
+
+# Arquivos de dados que são publicados local -> nuvem
+PUBLISH_FILES = {
+    "banco_de_dados": ARQUIVO_DB_ROTAS,
+    "banco_relatorios": ARQUIVO_RELATORIOS,
+    "sheets_cache": ARQUIVO_SHEETS_CACHE,
+    "geocode_cache": str(APP_ROOT / "geocode_cache.json"),
+}
 
 # ---------- Logging ----------
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -86,13 +108,70 @@ db = mongo_client[DB_NAME]
 app = FastAPI(title="S.E.X.T.A - F.E.I.R.A Control Panel", version="3.0")
 api = APIRouter(prefix="/api")
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=os.environ.get("CORS_ORIGINS", "*").split(","),
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+_cors_origins = os.environ.get("CORS_ORIGINS", "*").strip()
+if _cors_origins == "*":
+    # Reflete a origem da requisição (necessário p/ cookies com credentials=True)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origin_regex=".*",
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+else:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=_cors_origins.split(","),
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+
+# ---------- Guard de autenticação (somente na nuvem) ----------
+# Prefixos liberados sem login mesmo na nuvem:
+#  - /api/auth/   → fluxo de login/logout/config
+#  - /api/public/ → endpoints somente-leitura protegidos por token de compartilhamento
+#  - /api/publish → recebe dados do app local (protegido por X-Publish-Key)
+_AUTH_FREE_PREFIXES = ("/api/auth/", "/api/public/", "/api/publish")
+
+
+async def _resolve_session(request: Request) -> Optional[dict]:
+    """Valida o session_token (cookie ou Authorization Bearer) e devolve o usuário."""
+    token = request.cookies.get("session_token")
+    if not token:
+        authz = request.headers.get("Authorization", "")
+        if authz.startswith("Bearer "):
+            token = authz[7:]
+    if not token:
+        return None
+    sess = await db.user_sessions.find_one({"session_token": token}, {"_id": 0})
+    if not sess:
+        return None
+    expires_at = sess.get("expires_at")
+    if isinstance(expires_at, str):
+        expires_at = datetime.fromisoformat(expires_at)
+    if expires_at and expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    if not expires_at or expires_at < datetime.now(timezone.utc):
+        return None
+    return await db.users.find_one({"user_id": sess["user_id"]}, {"_id": 0})
+
+
+@app.middleware("http")
+async def cloud_auth_guard(request: Request, call_next):
+    if not IS_CLOUD:
+        return await call_next(request)
+    path = request.url.path
+    if request.method == "OPTIONS" or not path.startswith("/api/"):
+        return await call_next(request)
+    if any(path == p.rstrip("/") or path.startswith(p) for p in _AUTH_FREE_PREFIXES):
+        return await call_next(request)
+    user = await _resolve_session(request)
+    if not user:
+        return JSONResponse({"detail": "Não autenticado"}, status_code=401)
+    request.state.user = user
+    return await call_next(request)
 
 
 # ==============================================================
@@ -1568,6 +1647,8 @@ async def sheets_sync():
     push_log("info" if res.get("ok") else "error",
              f"SHEETS > sync: {res.get('total_rows', 0)} linhas, ok={res.get('ok')}",
              "sheets")
+    if res.get("ok"):
+        await loop.run_in_executor(None, _publish_to_cloud)
     return res
 
 
@@ -1589,6 +1670,7 @@ def _run_auto_sheets_sync():
                      f"AUTO-SHEETS > sync: {res.get('total_rows', 0)} linhas em "
                      f"{len(res.get('abas', []))} abas",
                      "sheets")
+            _publish_to_cloud()
         else:
             push_log("error", f"AUTO-SHEETS > falha: {res.get('error')}", "sheets")
     except Exception as e:  # pragma: no cover
@@ -1948,6 +2030,198 @@ async def public_tokens_delete(tid: str):
 
 
 # ==============================================================
+# AUTENTICAÇÃO MISTA (Google + Senha) — somente aplicada quando IS_CLOUD=true
+# ==============================================================
+class GoogleAuthIn(BaseModel):
+    session_id: str
+
+
+class PasswordAuthIn(BaseModel):
+    password: str
+
+
+class AllowedEmailIn(BaseModel):
+    email: str
+
+
+def _set_session_cookie(response: Response, token: str):
+    response.set_cookie(
+        "session_token", token,
+        httponly=True, secure=True, samesite="none",
+        path="/", max_age=7 * 24 * 3600,
+    )
+
+
+async def _create_session(user_id: str) -> str:
+    token = secrets.token_urlsafe(32)
+    await db.user_sessions.insert_one({
+        "user_id": user_id,
+        "session_token": token,
+        "expires_at": datetime.now(timezone.utc) + timedelta(days=7),
+        "created_at": datetime.now(timezone.utc),
+    })
+    return token
+
+
+@api.get("/auth/config")
+async def auth_config():
+    """Diz ao frontend se deve exigir login (nuvem) ou não (local)."""
+    return {"is_cloud": IS_CLOUD, "password_enabled": bool(ADMIN_PASSWORD)}
+
+
+@api.post("/auth/google")
+async def auth_google(body: GoogleAuthIn, response: Response):
+    """Troca o session_id da Emergent Auth por uma sessão local, validando allowlist."""
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            r = await client.get(EMERGENT_SESSION_API, headers={"X-Session-ID": body.session_id})
+    except Exception as e:
+        raise HTTPException(502, f"Falha ao validar sessão Google: {e}")
+    if r.status_code != 200:
+        raise HTTPException(401, "Sessão Google inválida ou expirada")
+    data = r.json()
+    email = (data.get("email") or "").strip().lower()
+    if not email:
+        raise HTTPException(401, "Não foi possível obter o e-mail da conta Google")
+    if not await db.allowed_emails.find_one({"email": email}):
+        raise HTTPException(403, "E-mail não autorizado a acessar este painel")
+    user = await db.users.find_one({"email": email}, {"_id": 0})
+    if not user:
+        user_id = f"user_{uuid.uuid4().hex[:12]}"
+        await db.users.insert_one({
+            "user_id": user_id, "email": email,
+            "name": data.get("name", ""), "picture": data.get("picture", ""),
+            "auth": "google", "created_at": datetime.now(timezone.utc),
+        })
+    else:
+        user_id = user["user_id"]
+        await db.users.update_one({"email": email}, {"$set": {
+            "name": data.get("name", user.get("name", "")),
+            "picture": data.get("picture", user.get("picture", "")),
+        }})
+    token = await _create_session(user_id)
+    _set_session_cookie(response, token)
+    u = await db.users.find_one({"user_id": user_id}, {"_id": 0})
+    push_log("info", f"AUTH > login Google: {email}", "auth")
+    return {"ok": True, "user": u, "session_token": token}
+
+
+@api.post("/auth/password")
+async def auth_password(body: PasswordAuthIn, response: Response):
+    """Login por senha compartilhada (ADMIN_PASSWORD)."""
+    if not ADMIN_PASSWORD or body.password != ADMIN_PASSWORD:
+        raise HTTPException(401, "Senha incorreta")
+    user_id = "admin_local"
+    if not await db.users.find_one({"user_id": user_id}, {"_id": 0}):
+        await db.users.insert_one({
+            "user_id": user_id, "email": SEED_ADMIN_EMAIL, "name": "Admin",
+            "auth": "password", "created_at": datetime.now(timezone.utc),
+        })
+    token = await _create_session(user_id)
+    _set_session_cookie(response, token)
+    u = await db.users.find_one({"user_id": user_id}, {"_id": 0})
+    push_log("info", "AUTH > login por senha", "auth")
+    return {"ok": True, "user": u, "session_token": token}
+
+
+@api.get("/auth/me")
+async def auth_me(request: Request):
+    if not IS_CLOUD:
+        return {"user_id": "local", "email": "local", "name": "Local", "auth": "local", "is_cloud": False}
+    user = await _resolve_session(request)
+    if not user:
+        raise HTTPException(401, "Não autenticado")
+    return user
+
+
+@api.post("/auth/logout")
+async def auth_logout(request: Request, response: Response):
+    token = request.cookies.get("session_token") or ""
+    if not token:
+        authz = request.headers.get("Authorization", "")
+        if authz.startswith("Bearer "):
+            token = authz[7:]
+    if token:
+        await db.user_sessions.delete_many({"session_token": token})
+    response.delete_cookie("session_token", path="/")
+    return {"ok": True}
+
+
+# ---------- Allowlist de e-mails (protegido pelo guard quando IS_CLOUD) ----------
+@api.get("/allowed-emails")
+async def allowed_emails_list():
+    return await db.allowed_emails.find({}, {"_id": 0}).sort("email", 1).to_list(500)
+
+
+@api.post("/allowed-emails")
+async def allowed_emails_add(body: AllowedEmailIn):
+    email = body.email.strip().lower()
+    if not email or "@" not in email:
+        raise HTTPException(400, "E-mail inválido")
+    await db.allowed_emails.update_one(
+        {"email": email},
+        {"$setOnInsert": {"email": email, "added_at": datetime.now(timezone.utc)}},
+        upsert=True,
+    )
+    push_log("info", f"AUTH > e-mail autorizado: {email}", "auth")
+    return {"ok": True, "email": email}
+
+
+@api.delete("/allowed-emails/{email}")
+async def allowed_emails_remove(email: str):
+    email = email.strip().lower()
+    await db.allowed_emails.delete_one({"email": email})
+    push_log("warn", f"AUTH > e-mail removido da allowlist: {email}", "auth")
+    return {"ok": True}
+
+
+# ==============================================================
+# PUBLICAÇÃO (sync local -> nuvem)
+# ==============================================================
+@api.post("/publish")
+async def publish_data(request: Request):
+    """Recebe os arquivos de dados do app LOCAL (protegido por X-Publish-Key)."""
+    if not PUBLISH_KEY:
+        raise HTTPException(503, "Publicação não configurada no servidor")
+    if request.headers.get("X-Publish-Key", "") != PUBLISH_KEY:
+        raise HTTPException(401, "Chave de publicação inválida")
+    body = await request.json()
+    written = []
+    for name, path in PUBLISH_FILES.items():
+        if body.get(name) is not None:
+            _storage.write_json(path, body[name])
+            written.append(name)
+    push_log("info", f"PUBLISH > recebido do app local: {', '.join(written) or 'nada'}", "publish")
+    return {"ok": True, "written": written, "ts": datetime.now(timezone.utc).isoformat()}
+
+
+def _publish_to_cloud() -> dict:
+    """Envia os arquivos de dados locais para a nuvem. Só roda quando NÃO é nuvem."""
+    if IS_CLOUD or not CLOUD_PUBLISH_URL or not PUBLISH_KEY:
+        return {"ok": False, "skipped": True}
+    payload = {name: _storage.read_json(path, None) for name, path in PUBLISH_FILES.items()}
+    try:
+        r = requests.post(
+            f"{CLOUD_PUBLISH_URL}/api/publish",
+            json=payload, headers={"X-Publish-Key": PUBLISH_KEY}, timeout=30,
+        )
+        ok = r.status_code == 200
+        push_log("info" if ok else "error",
+                 f"PUBLISH > enviado p/ nuvem: status={r.status_code}", "publish")
+        return {"ok": ok, "status": r.status_code}
+    except Exception as e:  # pragma: no cover
+        push_log("error", f"PUBLISH > falha ao enviar p/ nuvem: {e}", "publish")
+        return {"ok": False, "error": str(e)}
+
+
+@api.post("/publish/now")
+async def publish_now():
+    """Dispara manualmente a publicação local -> nuvem."""
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, _publish_to_cloud)
+
+
+# ==============================================================
 # COMANDOS (legacy + chat)
 # ==============================================================
 @api.post("/commands/execute")
@@ -2032,6 +2306,16 @@ app.include_router(api)
 async def startup():
     global MAIN_LOOP
     MAIN_LOOP = asyncio.get_event_loop()
+    # Garante que o e-mail admin esteja na allowlist (nuvem)
+    try:
+        if SEED_ADMIN_EMAIL:
+            await db.allowed_emails.update_one(
+                {"email": SEED_ADMIN_EMAIL},
+                {"$setOnInsert": {"email": SEED_ADMIN_EMAIL, "added_at": datetime.now(timezone.utc)}},
+                upsert=True,
+            )
+    except Exception as e:
+        push_log("error", f"Falha ao semear allowlist: {e}", "auth")
     push_log("info", f"{NOME_IA} v3.0 online. Núcleo Gemini {GEMINI_MODEL}.", "system")
     push_log("info", f"Voz neural: {VOZ_SINTETIZADOR}", "system")
     # Re-agenda lembretes pendentes

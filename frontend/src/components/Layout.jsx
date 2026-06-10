@@ -29,6 +29,8 @@ import {
 } from "@phosphor-icons/react";
 import { api } from "../api";
 import WakeWord from "./WakeWord";
+import { useAuth } from "../auth/AuthContext";
+import { SignOut } from "@phosphor-icons/react";
 
 const NAV = [
   { to: "/", label: "Overview", icon: Terminal, end: true },
@@ -80,6 +82,7 @@ function StatusPill({ status }) {
 export default function Layout() {
   const [status, setStatus] = useState(null);
   const location = useLocation();
+  const { isCloud, user, logout } = useAuth();
 
   useEffect(() => {
     let mounted = true;
@@ -154,6 +157,15 @@ export default function Layout() {
             <div>FATOS: {status?.total_facts ?? 0}</div>
             <div>LEMBRETES: {status?.total_reminders ?? 0}</div>
             <div className="capitalize">PERSONA: {status?.personality || "—"}</div>
+            {isCloud && (
+              <button
+                data-testid="logout-button"
+                onClick={logout}
+                className="mt-3 w-full inline-flex items-center justify-center gap-2 border border-zinc-700 text-zinc-400 hover:border-amber hover:text-amber px-3 py-2 rounded uppercase tracking-widest text-[10px] transition-colors"
+              >
+                <SignOut size={13} weight="bold" /> Sair{user?.email && user.email !== "local" ? ` · ${user.email}` : ""}
+              </button>
+            )}
           </div>
         </aside>
 

@@ -1,5 +1,5 @@
 import React from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { Toaster } from "sonner";
 import Layout from "./components/Layout";
 import Overview from "./pages/Overview";
@@ -28,10 +28,61 @@ import Agent from "./pages/Agent";
 import Whatsapp from "./pages/Whatsapp";
 import Share from "./pages/Share";
 import PublicAnalytics from "./pages/PublicAnalytics";
+import Login from "./pages/Login";
+import AuthCallback from "./pages/AuthCallback";
+import { AuthProvider, ProtectedRoute } from "./auth/AuthContext";
+
+function AppRouter() {
+  const location = useLocation();
+  // Volta do OAuth (session_id no fragmento) — processa ANTES das rotas protegidas
+  if (location.hash?.includes("session_id=")) {
+    return <AuthCallback />;
+  }
+  return (
+    <Routes>
+      <Route path="/p/analytics" element={<PublicAnalytics />} />
+      <Route path="/login" element={<Login />} />
+      <Route
+        element={
+          <ProtectedRoute>
+            <Layout />
+          </ProtectedRoute>
+        }
+      >
+        <Route path="/" element={<Overview />} />
+        <Route path="/agent" element={<Agent />} />
+        <Route path="/analytics" element={<Analytics />} />
+        <Route path="/commands" element={<Commands />} />
+        <Route path="/docs" element={<Docs />} />
+        <Route path="/chat" element={<Chat />} />
+        <Route path="/code" element={<CodeLab />} />
+        <Route path="/document" element={<DocumentTools />} />
+        <Route path="/research" element={<Research />} />
+        <Route path="/knowledge" element={<Knowledge />} />
+        <Route path="/workflows" element={<Workflows />} />
+        <Route path="/productivity" element={<Productivity />} />
+        <Route path="/finance" element={<Finance />} />
+        <Route path="/vision" element={<Vision />} />
+        <Route path="/routes" element={<RoutesPage />} />
+        <Route path="/reports" element={<Reports />} />
+        <Route path="/memory" element={<Memory />} />
+        <Route path="/long-memory" element={<LongMemory />} />
+        <Route path="/reminders" element={<Reminders />} />
+        <Route path="/google" element={<GoogleHub />} />
+        <Route path="/whatsapp" element={<Whatsapp />} />
+        <Route path="/share" element={<Share />} />
+        <Route path="/skills" element={<Skills />} />
+        <Route path="/logs" element={<Logs />} />
+        <Route path="/settings" element={<Settings />} />
+        <Route path="*" element={<Navigate to="/" />} />
+      </Route>
+    </Routes>
+  );
+}
 
 export default function App() {
   return (
-    <>
+    <AuthProvider>
       <Toaster
         theme="dark"
         position="bottom-right"
@@ -45,37 +96,7 @@ export default function App() {
           },
         }}
       />
-      <Routes>
-        <Route path="/p/analytics" element={<PublicAnalytics />} />
-        <Route element={<Layout />}>
-          <Route path="/" element={<Overview />} />
-          <Route path="/agent" element={<Agent />} />
-          <Route path="/analytics" element={<Analytics />} />
-          <Route path="/commands" element={<Commands />} />
-          <Route path="/docs" element={<Docs />} />
-          <Route path="/chat" element={<Chat />} />
-          <Route path="/code" element={<CodeLab />} />
-          <Route path="/document" element={<DocumentTools />} />
-          <Route path="/research" element={<Research />} />
-          <Route path="/knowledge" element={<Knowledge />} />
-          <Route path="/workflows" element={<Workflows />} />
-          <Route path="/productivity" element={<Productivity />} />
-          <Route path="/finance" element={<Finance />} />
-          <Route path="/vision" element={<Vision />} />
-          <Route path="/routes" element={<RoutesPage />} />
-          <Route path="/reports" element={<Reports />} />
-          <Route path="/memory" element={<Memory />} />
-          <Route path="/long-memory" element={<LongMemory />} />
-          <Route path="/reminders" element={<Reminders />} />
-          <Route path="/google" element={<GoogleHub />} />
-          <Route path="/whatsapp" element={<Whatsapp />} />
-          <Route path="/share" element={<Share />} />
-          <Route path="/skills" element={<Skills />} />
-          <Route path="/logs" element={<Logs />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="*" element={<Navigate to="/" />} />
-        </Route>
-      </Routes>
-    </>
+      <AppRouter />
+    </AuthProvider>
   );
 }
