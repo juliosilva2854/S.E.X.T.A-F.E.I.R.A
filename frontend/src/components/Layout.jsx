@@ -26,6 +26,7 @@ import {
   Book,
   Robot,
   ShareNetwork,
+  ShieldCheck,
 } from "@phosphor-icons/react";
 import { api } from "../api";
 import WakeWord from "./WakeWord";
@@ -54,6 +55,7 @@ const NAV = [
   { to: "/google", label: "Google Hub", icon: GoogleLogo },
   { to: "/whatsapp", label: "WhatsApp", icon: WhatsappLogo },
   { to: "/share", label: "Compartilhar", icon: ShareNetwork },
+  { to: "/access", label: "Acesso", icon: ShieldCheck },
   { to: "/skills", label: "Skills", icon: Lightning },
   { to: "/logs", label: "Logs Stream", icon: ListBullets },
   { to: "/docs", label: "Documentação", icon: Book },

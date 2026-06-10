@@ -27,6 +27,7 @@ import Docs from "./pages/Docs";
 import Agent from "./pages/Agent";
 import Whatsapp from "./pages/Whatsapp";
 import Share from "./pages/Share";
+import Access from "./pages/Access";
 import PublicAnalytics from "./pages/PublicAnalytics";
 import Login from "./pages/Login";
 import AuthCallback from "./pages/AuthCallback";
@@ -71,6 +72,7 @@ function AppRouter() {
         <Route path="/google" element={<GoogleHub />} />
         <Route path="/whatsapp" element={<Whatsapp />} />
         <Route path="/share" element={<Share />} />
+        <Route path="/access" element={<Access />} />
         <Route path="/skills" element={<Skills />} />
         <Route path="/logs" element={<Logs />} />
         <Route path="/settings" element={<Settings />} />

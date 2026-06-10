@@ -2093,12 +2093,14 @@ async def auth_google(body: GoogleAuthIn, response: Response):
             "user_id": user_id, "email": email,
             "name": data.get("name", ""), "picture": data.get("picture", ""),
             "auth": "google", "created_at": datetime.now(timezone.utc),
+            "last_login": datetime.now(timezone.utc),
         })
     else:
         user_id = user["user_id"]
         await db.users.update_one({"email": email}, {"$set": {
             "name": data.get("name", user.get("name", "")),
             "picture": data.get("picture", user.get("picture", "")),
+            "last_login": datetime.now(timezone.utc),
         }})
     token = await _create_session(user_id)
     _set_session_cookie(response, token)
@@ -2117,7 +2119,11 @@ async def auth_password(body: PasswordAuthIn, response: Response):
         await db.users.insert_one({
             "user_id": user_id, "email": SEED_ADMIN_EMAIL, "name": "Admin",
             "auth": "password", "created_at": datetime.now(timezone.utc),
+            "last_login": datetime.now(timezone.utc),
         })
+    else:
+        await db.users.update_one({"user_id": user_id},
+                                  {"$set": {"last_login": datetime.now(timezone.utc)}})
     token = await _create_session(user_id)
     _set_session_cookie(response, token)
     u = await db.users.find_one({"user_id": user_id}, {"_id": 0})
@@ -2174,6 +2180,30 @@ async def allowed_emails_remove(email: str):
     await db.allowed_emails.delete_one({"email": email})
     push_log("warn", f"AUTH > e-mail removido da allowlist: {email}", "auth")
     return {"ok": True}
+
+
+@api.get("/users")
+async def users_list():
+    """Lista usuários que já entraram, com último acesso (para o painel Acesso)."""
+    users = await db.users.find(
+        {}, {"_id": 0, "user_id": 1, "email": 1, "name": 1, "auth": 1, "last_login": 1, "created_at": 1}
+    ).to_list(500)
+
+    def _key(u):
+        dt = u.get("last_login") or u.get("created_at")
+        if isinstance(dt, str):
+            try:
+                dt = datetime.fromisoformat(dt)
+            except Exception:
+                dt = None
+        if dt is None:
+            return 0.0
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.timestamp()
+
+    users.sort(key=_key, reverse=True)
+    return users
 
 
 # ==============================================================
