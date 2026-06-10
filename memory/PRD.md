@@ -18,6 +18,23 @@ https://repo-analyzer-243.preview.emergentagent.com
 
 ## O que foi feito
 
+### 10/06/2026 — Chat executa comandos + Google Sheets como fonte do Analytics
+- **Chat Neural EXECUTA** comandos operacionais ao invés de só responder:
+  - "sincroniza/sync planilha" → `mavis.skills.google_sheets.sync_all()` (manual, on-demand)
+  - "atualizar planilha" / "preencher quilometragem" → `planilhas.preencher_km_faltantes()`
+  - "aprender rotas" / "estudar rotas" → `aprender_rotas.treinar_mavis()`
+  - "gerar relatório" / "resumo da semana" → `relatorios.gerar_resumo()` (DESKTOP_ONLY — Playwright)
+  - Comando desktop-only num host sem `credenciais.json` retorna `{desktop_only: True}` para o cérebro avisar
+- **Google Sheets vira fonte primária do Analytics**:
+  - Nova skill `mavis/skills/google_sheets.py` autentica em 2 níveis (OAuth do usuário → Service Account legada)
+  - `sync_all()` varre TODAS as abas mensais da planilha "Planilha KM - Julio Cesar MTFL" (ID `1BkA...Sbhn4`), extrai Data/Origem/Destino/Tipo/Ticket/KM e salva em `sheets_cache.json`
+  - `analytics.py::_flat_days_smart()` agora usa o cache do Sheets quando existir (estruturado, confiável) e cai pros relatórios narrativos JSON como fallback
+  - "Tipo Visita" da planilha é normalizada pras atividades antigas (Preventiva → manutencao_preventiva, etc)
+- **Novos endpoints**: `GET /api/sheets/status`, `POST /api/sheets/sync`, `GET /api/sheets/rows`
+- **UI Analytics**: botão "SINCRONIZAR PLANILHA" (verde) no header + label "FONTE:" indicando se dados vêm do Sheets ou dos relatórios JSON
+- **Router expandido**: regex de `route.legacy` agora cobre `sincronizar planilha`, `sync sheets`, `puxar planilha`, `resumo da semana`, `relatório mensal`
+- **Dependências**: `gspread==6.2.1` e `oauth2client==4.1.3` adicionados ao `requirements.txt`
+
 ### 09/06/2026 — Migração WhatsApp para WAHA + Script único
 - **WAHA é a API oficial agora** (Playwright aposentado). `mavis/skills/whatsapp.py` lê
   `WAHA_URL`, `WAHA_API_KEY`, `WAHA_SESSION` do `.env`; bug do `formatar_numero` ausente
