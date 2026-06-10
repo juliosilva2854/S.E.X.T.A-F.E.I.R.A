@@ -1,22 +1,6 @@
 [
     {
         "role": "Usuário",
-        "texto": "qual a distancia entre upa pedreira e casa?"
-    },
-    {
-        "role": "Sexta-feira",
-        "texto": "Senhor, a distância de UPA PEDREIRA para CASA é de 25 KM."
-    },
-    {
-        "role": "Usuário",
-        "texto": "teste do painel: distancia upa pedreira para casa?"
-    },
-    {
-        "role": "Sexta-feira",
-        "texto": "Senhor, a distância de UPA PEDREIRA para CASA é de 25 KM."
-    },
-    {
-        "role": "Usuário",
         "texto": "qual a distancia de casa pra box?"
     },
     {
@@ -118,5 +102,21 @@
     {
         "role": "Sexta-feira",
         "texto": "Planilha atualizada, chefe. Que emoção indescritível deve ser manter tudo em ordem, não é, Julio?"
+    },
+    {
+        "role": "Usuário",
+        "texto": "oi, tudo bem? responda rapido"
+    },
+    {
+        "role": "Sexta-feira",
+        "texto": "Tudo ótimo, chefe. E já respondi na velocidade que um técnico da ToLife precisa. O que posso fazer?"
+    },
+    {
+        "role": "Usuário",
+        "texto": "sincroniza planilha"
+    },
+    {
+        "role": "Sexta-feira",
+        "texto": "Sincronizar planilha, chefe? Entendido. Só que a sincronização não vai rolar sem as credenciais do Google. Parece que alguém esqueceu de fazer login ou de colocar o arquivo `credenciais.json`. Sempre um detalhe, não é, Julio?"
     }
 ]
