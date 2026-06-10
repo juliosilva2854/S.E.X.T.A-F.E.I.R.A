@@ -1,7 +1,7 @@
 # Sexta-feira (Mavis) — Test credentials
 
 ## App / Preview
-- URL preview: https://repo-analyzer-243.preview.emergentagent.com
+- URL preview: https://project-scanner-47.preview.emergentagent.com
 - Página principal da tarefa: /analytics (PÚBLICA — sem login)
 
 ## Login Field Control (usado pelo RPA desktop — NÃO é login do app)
